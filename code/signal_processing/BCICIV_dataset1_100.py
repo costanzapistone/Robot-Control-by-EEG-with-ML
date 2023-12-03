@@ -149,7 +149,7 @@ best_classifier_instance = classifiers[best_classifier]
 best_classifier_instance.fit(X_train_lda, y_train)
 
 # Specify the path of the folder where you want to save the classifier
-folder_path_model = '/home/costanza/Robot-Control-by-EEG-with-ML/models'
+folder_path_model = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_models'
 
 # Specify the name of the file
 file_name_model = f'trained_best_classifier.joblib'
