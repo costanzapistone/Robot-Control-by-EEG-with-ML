@@ -1,3 +1,5 @@
+#%%
+
 import numpy as np
 from scipy.io import loadmat
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -110,10 +112,55 @@ print("Classifier\tAv. Accuracy\tAv. AUC")
 for clf_name, avg_results_clf in average_results_classifier.items():
     print(f"{clf_name}\t\t{avg_results_clf['Accuracy']:.4f}\t\t{avg_results_clf['AUC']:.4f}")
 
+#%% Choose the best classifier for each subject 
+
+# Dictionary to store combined scores for each classifier
+combined_results_classifier = {clf_name: {'Combined_Score': 0} for clf_name in classifiers}
+
+# Iterate over classifiers
+for clf_name in classifiers:
+    # Weighted average of accuracy and AUC (adjust weights based on your priorities)
+    weight_accuracy = 0.5
+    weight_auc = 0.5
+    combined_score = (
+        weight_accuracy * average_results_classifier[clf_name]['Accuracy'] +
+        weight_auc * average_results_classifier[clf_name]['AUC']
+    )
+    combined_results_classifier[clf_name]['Combined_Score'] = combined_score
+
+
+# Print the results
+print("\nCombined Results Across All Subjects:")
+print("Classifier\tCombined Score")
+for clf_name, combined_results_clf in combined_results_classifier.items():
+    print(f"{clf_name}\t\t{combined_results_clf['Combined_Score']:.4f}")
+
+# Identify the best classifier based on the combined score
+best_classifier = max(combined_results_classifier, key=lambda x: combined_results_classifier[x]['Combined_Score'])
+
+# Print the best classifier
+print(f"\nBest classifier: {best_classifier}")
+
+#%% Save the trained best classifier
+
+import joblib
+
+best_classifier_instance = classifiers[best_classifier]
+best_classifier_instance.fit(X_train_lda, y_train)
+
+# Specify the filename to save the trained est classifier
+best_classifier_filename = "trained_best_classifier.joblib"
+
+joblib.dump(best_classifier_instance, best_classifier_filename)
+
+# Print a message indicating the saved file
+print(f"Trained best classifier saved to {best_classifier_filename}")
+
+
+#%%
+# Plot tables with results
 
 import matplotlib.pyplot as plt
-
-
 
 # Extract classifier names
 classifier_names = list(classifiers.keys())
@@ -154,6 +201,8 @@ ax[1].axis('off')
 
 plt.show()
 
+#%%
+# Create a Bar Plot for the results
 
 # Lista di colori per i soggetti
 subject_colors = {'b': 'blue', 'g': 'orange'}
