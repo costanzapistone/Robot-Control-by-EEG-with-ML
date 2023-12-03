@@ -148,13 +148,20 @@ import joblib
 best_classifier_instance = classifiers[best_classifier]
 best_classifier_instance.fit(X_train_lda, y_train)
 
-# Specify the filename to save the trained est classifier
-best_classifier_filename = "trained_best_classifier.joblib"
+# Specify the path of the folder where you want to save the classifier
+folder_path_model = '/home/costanza/Robot-Control-by-EEG-with-ML/models'
 
-joblib.dump(best_classifier_instance, best_classifier_filename)
+# Specify the name of the file
+file_name_model = f'trained_best_classifier.joblib'
+
+# Create the full file path by concatenating the folder path and the file name 
+file_path_model = folder_path_model + '/' + file_name_model
+
+# Save the classifier
+joblib.dump(best_classifier_instance, file_path_model)
 
 # Print a message indicating the saved file
-print(f"Trained best classifier saved to {best_classifier_filename}")
+print(f"Trained best classifier saved in {file_path_model}")
 
 
 #%%
