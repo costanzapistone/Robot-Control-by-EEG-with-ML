@@ -61,6 +61,27 @@ def segment_trials(EEGdata, event_onsets, event_codes, s_freq, cl_lab):
 
     return trials
 
+def segment_trials_seq(EEGdata, event_onsets, event_codes, cl_lab, segment_length=400):
+    # Dictionary to store the trials, each class gets an entry
+    trials = {cl: [] for cl in cl_lab}
+
+    # Iterate over each event code
+    for code in np.unique(event_codes):
+        # Extract the onsets for the current event code
+        cl_onsets = event_onsets[event_codes == code]
+
+        # Extract each trial
+        for onset in cl_onsets:
+            # Ensure that the segment doesn't go beyond the EEGdata length
+            if onset + segment_length <= EEGdata.shape[1]:
+                # Extract the segment of fixed length
+                segment = EEGdata[:, onset:onset + segment_length]
+
+                # Store the segment in the corresponding class entry
+                trials[cl_lab[code]].append(segment)
+
+    return trials
+
 def compute_abs_fft(trials, cl_lab):
     # Dictionary to store FFT trials
     fft_trials = {}
@@ -105,3 +126,21 @@ def lda(fft_trials, cl1, cl2):
     X_test_lda = lda.transform(X_test)
 
     return X_train_lda, X_test_lda, y_train, y_test
+
+def lda_evaluation(fft_trials, event_codes, cl1, cl2):
+    n_trials_cl1 = fft_trials[cl1].shape[2]
+    n_trials_cl2 = fft_trials[cl2].shape[2]
+    n_features = fft_trials[cl1].shape[0] * fft_trials[cl1].shape[1]
+
+    # Reshape the FFT data: Flatten each trial into a single row
+    X_cl1 = fft_trials[cl1].reshape(n_trials_cl1, n_features)
+    X_cl2 = fft_trials[cl2].reshape(n_trials_cl2, n_features)
+
+    # Use event_codes as the true labels
+    y_true = np.concatenate([event_codes[cl1], event_codes[cl2]])
+
+    lda = LinearDiscriminantAnalysis(n_components=1)
+    
+    X_lda = lda.fit_transform(np.concatenate([X_cl1, X_cl2], axis=0), y_true)
+
+    return X_lda, y_true

@@ -30,8 +30,8 @@ average_results_dict = {}
 for subject in subjects:
 
     # Load the MATLAB file for the current subject
-    file_path = f'/home/costanza/thesis/Datasets/BCI_Competition_IV/calib/BCICIV_1_mat/BCICIV_calib_ds1{subject}.mat'
-    
+    file_path = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{subject}.mat'
+
     # Call the function to load and extract the data
     EEGdata, s_freq, chan_names, event_onsets, event_codes, cl_lab, cl1, cl2 = load_and_extract_data(file_path)
 
