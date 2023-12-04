@@ -12,6 +12,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 import joblib
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 from analysis_processing_functions import load_and_extract_data, segment_trials, compute_abs_fft, lda, lda_evaluation, segment_trials_seq
 
@@ -32,7 +33,7 @@ file_path = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1a
 EEGdata, s_freq, chan_names, event_onsets, event_codes, cl_lab, cl1, cl2 = load_and_extract_data(file_path)
 
 # Segmentation
-trials = segment_trials(EEGdata, event_onsets, event_codes, cl_lab, segment_length=400)
+trials = segment_trials(EEGdata, event_onsets, event_codes, s_freq, cl_lab)
    
 # FFT
 fft_trials = compute_abs_fft(trials, cl_lab)
@@ -46,3 +47,11 @@ predicted_labels_new = best_classifier_instance.predict(X_lda)
 # Print or use the predicted labels as needed
 print("Predicted Labels for New Data:", predicted_labels_new)
 # %%
+# Calculate confusion matrix
+conf_matrix = confusion_matrix(y_true, predicted_labels_new)
+print("\nConfusion Matrix:")
+print(conf_matrix)
+#%%
+# Calculate accuracy
+accuracy = accuracy_score(y_true, predicted_labels_new)
+print("\nAccuracy:", accuracy)

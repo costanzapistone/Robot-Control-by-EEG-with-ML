@@ -127,7 +127,7 @@ def lda(fft_trials, cl1, cl2):
 
     return X_train_lda, X_test_lda, y_train, y_test
 
-def lda_evaluation(fft_trials, event_codes, cl1, cl2):
+def lda_evaluation(fft_trials, cl1, cl2):
     n_trials_cl1 = fft_trials[cl1].shape[2]
     n_trials_cl2 = fft_trials[cl2].shape[2]
     n_features = fft_trials[cl1].shape[0] * fft_trials[cl1].shape[1]
@@ -136,11 +136,17 @@ def lda_evaluation(fft_trials, event_codes, cl1, cl2):
     X_cl1 = fft_trials[cl1].reshape(n_trials_cl1, n_features)
     X_cl2 = fft_trials[cl2].reshape(n_trials_cl2, n_features)
 
-    # Use event_codes as the true labels
-    y_true = np.concatenate([event_codes[cl1], event_codes[cl2]])
+    X = np.concatenate([X_cl1, X_cl2], axis=0)
+
+    # Create labels: 0 for class 1, 1 for class 2
+    y_true = np.concatenate([np.zeros(n_trials_cl1), np.ones(n_trials_cl2)])
+
+    #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
 
     lda = LinearDiscriminantAnalysis(n_components=1)
-    
-    X_lda = lda.fit_transform(np.concatenate([X_cl1, X_cl2], axis=0), y_true)
 
+    X_lda = lda.fit_transform(X, y_true)
+    #X_train_lda = lda.fit_transform(X_train, y_train)
+
+    #X_test_lda = lda.transform(X_test)
     return X_lda, y_true
