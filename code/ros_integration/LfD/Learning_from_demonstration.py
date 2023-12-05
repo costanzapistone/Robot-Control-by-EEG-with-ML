@@ -25,7 +25,7 @@ class LfD(Panda):
 
         self.gripper_close_width = 0
         self.gripper_open_width  = 0.06
-        self.gripper_sensitivity= 0.01
+        self.gripper_sensitivity= 0.03
 
 
         self.home_pose = None
