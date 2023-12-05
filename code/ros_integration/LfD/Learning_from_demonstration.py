@@ -233,4 +233,12 @@ class LfD(Panda):
         self.recorded_gripper = data['grip']
         self.filename=str(file)
 
+    def is_at_home(self):
+        if self.home_pose is not None:
+            return np.linalg.norm(self.home_pose-self.curr_pos) <= self.attractor_distance_threshold
+        else:
+            return False
+
 # %%
+
+

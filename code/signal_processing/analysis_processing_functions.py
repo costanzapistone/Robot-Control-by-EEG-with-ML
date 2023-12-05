@@ -3,6 +3,8 @@ from scipy.io import loadmat
 from scipy.fftpack import fft
 from sklearn.model_selection import train_test_split
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import confusion_matrix, accuracy_score
+import joblib
 
 
 
@@ -150,3 +152,43 @@ def lda_evaluation(fft_trials, cl1, cl2):
 
     #X_test_lda = lda.transform(X_test)
     return X_lda, y_true
+
+def predict_labels_from_file(file_path):
+    "This function takes as an input the file path of the EEG data-set under evaluation and returns the predicted labels for the new data."
+        
+    # Load the trained best classifier
+    folder_path_model = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_models'
+    file_name_model = 'trained_best_classifier.joblib'
+    file_path_model = folder_path_model + '/' + file_name_model
+    best_classifier_instance = joblib.load(file_path_model)
+    
+    #print(f'Best classifier: {best_classifier_instance}')
+
+    # Load and preprocess the new EEG evaluation data
+    EEGdata, s_freq, chan_names, event_onsets, event_codes, cl_lab, cl1, cl2 = load_and_extract_data(file_path)
+
+    # Segmentation
+    trials = segment_trials(EEGdata, event_onsets, event_codes, s_freq, cl_lab)
+       
+    # FFT
+    fft_trials = compute_abs_fft(trials, cl_lab)
+
+    # LDA
+    X_lda, y_true = lda_evaluation(fft_trials, cl1, cl2)
+
+    # Use the loaded classifier to predict labels for the new EEG signal
+    predicted_labels = best_classifier_instance.predict(X_lda)
+
+    # Print or use the predicted labels as needed
+    #print("Predicted Labels for New Data:", predicted_labels_new)
+
+    # Calculate confusion matrix
+    #conf_matrix = confusion_matrix(y_true, predicted_labels_new)
+    #print("\nConfusion Matrix:")
+    #print(conf_matrix)
+
+    # Calculate accuracy
+    #accuracy = accuracy_score(y_true, predicted_labels_new)
+    #print("\nAccuracy:", accuracy)
+
+    return predicted_labels

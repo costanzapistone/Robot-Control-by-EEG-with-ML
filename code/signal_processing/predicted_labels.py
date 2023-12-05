@@ -27,7 +27,7 @@ print(f'Best classifier: {best_classifier_instance}')
 # %%
   
 # Load and preprocess the new EEG evaluation data
-file_path = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1a.mat'
+file_path = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_eval_ds1b.mat'
 
 # Call the function to load and extract the data
 EEGdata, s_freq, chan_names, event_onsets, event_codes, cl_lab, cl1, cl2 = load_and_extract_data(file_path)
@@ -42,16 +42,50 @@ fft_trials = compute_abs_fft(trials, cl_lab)
 X_lda, y_true = lda_evaluation(fft_trials, cl1, cl2)
 
 # Use the loaded classifier to predict labels for the new EEG signal
-predicted_labels_new = best_classifier_instance.predict(X_lda)
+predicted_labels = best_classifier_instance.predict(X_lda)
 
 # Print or use the predicted labels as needed
-print("Predicted Labels for New Data:", predicted_labels_new)
+print("Predicted Labels for New Data:", predicted_labels)
 # %%
 # Calculate confusion matrix
-conf_matrix = confusion_matrix(y_true, predicted_labels_new)
+conf_matrix = confusion_matrix(y_true, predicted_labels)
 print("\nConfusion Matrix:")
 print(conf_matrix)
 #%%
 # Calculate accuracy
-accuracy = accuracy_score(y_true, predicted_labels_new)
+accuracy = accuracy_score(y_true, predicted_labels)
 print("\nAccuracy:", accuracy)
+
+# %%
+# Calculate AUC
+auc = roc_auc_score(y_true, predicted_labels)
+print("\nAUC:", auc)
+
+#%%
+# Save the predicted labels in a csv file
+
+import csv
+import os
+
+# Specify the output folder and filename
+output_folder = "/home/costanza/Robot-Control-by-EEG-with-ML/code/predicted_labels"
+output_filename = "predicted_labels.csv"
+
+# Construct the output file path
+csv_file_path = os.path.join(output_folder, output_filename)
+
+# Open the file in write mode with newline='' to avoid extra newlines
+with open(csv_file_path, 'w', newline='') as file:
+    # Create a CSV writer
+    csv_writer = csv.writer(file)
+
+    # Write the predicted labels to the first row
+    csv_writer.writerow(predicted_labels)
+
+    # Write the corresponding movement types for label 0 to the second row
+    csv_writer.writerow([cl_lab[0]])
+
+    # Write the corresponding movement types for label 1 to the third row
+    csv_writer.writerow([cl_lab[1]])
+
+print(f"Predicted labels and associated movement types have been saved to {csv_file_path}")
