@@ -6,6 +6,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
 
 # Functions
 from analysis_processing_functions import load_and_extract_data, segment_trials, compute_abs_fft, lda
@@ -163,6 +164,31 @@ joblib.dump(best_classifier_instance, file_path_model)
 # Print a message indicating the saved file
 print(f"Trained best classifier saved in {file_path_model}")
 
+#%% # Use the loaded classifier to predict labels for the new EEG signal
+#X_test_lda represents the input features of the test set, and y_test represents the true labels for that set.
+predicted_labels = best_classifier_instance.predict(X_test_lda)
+
+# Print or use the predicted labels as needed
+print("Predicted Labels for New Data:", predicted_labels)
+#%%
+#  Calculate confusion matrix
+conf_matrix = confusion_matrix(y_test, predicted_labels)
+print("\nConfusion Matrix:")
+print(conf_matrix)
+#%% 
+# Plot the confusion matrix
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(5, 5))
+ax.matshow(conf_matrix, cmap=plt.cm.Blues, alpha=0.3)
+for i in range(conf_matrix.shape[0]):
+    for j in range(conf_matrix.shape[1]):
+        ax.text(x=j, y=i, s=conf_matrix[i, j], va='center', ha='center', size='xx-large')
+
+plt.xlabel('Predictions', fontsize=18)
+plt.ylabel('Actuals', fontsize=18)
+plt.title('Confusion Matrix', fontsize=18)
+plt.show()
 
 #%%
 # Plot tables with results
