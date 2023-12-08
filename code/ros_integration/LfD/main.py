@@ -50,4 +50,5 @@ LfD.go_to_home()
 #LfD.save()
 
 
-# %%
+#if __name__ == '__main__':
+#    pass

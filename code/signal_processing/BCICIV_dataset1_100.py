@@ -44,14 +44,13 @@ for subject in subjects:
 
     # LDA
     X_train_lda, X_test_lda, y_train, y_test = lda(fft_trials, cl1, cl2)
-
     # Initialize classifiers
     classifiers = {
         'KNN': KNeighborsClassifier(n_neighbors=3),
         'NB': GaussianNB(),
         'LR': LogisticRegression(),
         'DT': DecisionTreeClassifier(),
-        'SVM': SVC(probability=True),  # Use probability=True for SVM to enable predict_proba
+        'SVM': SVC(probability = True),  # Use probability=True for SVM to enable predict_proba
     }
 
     # Dictionary to store results for each classifier
@@ -185,8 +184,8 @@ for i in range(conf_matrix.shape[0]):
     for j in range(conf_matrix.shape[1]):
         ax.text(x=j, y=i, s=conf_matrix[i, j], va='center', ha='center', size='xx-large')
 
-plt.xlabel('Predictions', fontsize=18)
-plt.ylabel('Actuals', fontsize=18)
+plt.xlabel('Predicted Labels', fontsize=18)
+plt.ylabel('True Labels', fontsize=18)
 plt.title('Confusion Matrix', fontsize=18)
 plt.show()
 

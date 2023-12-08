@@ -11,8 +11,9 @@ from pose_transform_functions import  array_quat_2_pose, list_2_quaternion, posi
 from panda import Panda
 
 class LfD(Panda):
-    def __init__(self):
-        rospy.init_node("learning_node")
+    def __init__(self, init_node=False):
+        if init_node:
+            rospy.init_node("learning_node")
         super(LfD, self).__init__()
         self.r=rospy.Rate(20)
         self.pose = Pose()

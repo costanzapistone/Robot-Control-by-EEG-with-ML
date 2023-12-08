@@ -117,8 +117,9 @@ def lda(fft_trials, cl1, cl2):
 
     X = np.concatenate([X_cl1, X_cl2], axis=0)
 
-    # Create labels: 0 for class 1, 1 for class 2
-    y = np.concatenate([np.zeros(n_trials_cl1), np.ones(n_trials_cl2)])
+    # Create labels: -1 for class 1 (), 1 for class 2
+    #y = np.concatenate([np.zeros(n_trials_cl1), np.ones(n_trials_cl2)])
+    y = np.concatenate([np.full(n_trials_cl1, -1), np.ones(n_trials_cl2)])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
 
@@ -128,30 +129,6 @@ def lda(fft_trials, cl1, cl2):
     X_test_lda = lda.transform(X_test)
 
     return X_train_lda, X_test_lda, y_train, y_test
-
-def lda_evaluation(fft_trials, cl1, cl2):
-    n_trials_cl1 = fft_trials[cl1].shape[2]
-    n_trials_cl2 = fft_trials[cl2].shape[2]
-    n_features = fft_trials[cl1].shape[0] * fft_trials[cl1].shape[1]
-
-    # Reshape the FFT data: Flatten each trial into a single row
-    X_cl1 = fft_trials[cl1].reshape(n_trials_cl1, n_features)
-    X_cl2 = fft_trials[cl2].reshape(n_trials_cl2, n_features)
-
-    X = np.concatenate([X_cl1, X_cl2], axis=0)
-
-    # Create labels: 0 for class 1, 1 for class 2
-    y_true = np.concatenate([np.zeros(n_trials_cl1), np.ones(n_trials_cl2)])
-
-    #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
-
-    lda = LinearDiscriminantAnalysis(n_components=1)
-
-    X_lda = lda.fit_transform(X, y_true)
-    #X_train_lda = lda.fit_transform(X_train, y_train)
-
-    #X_test_lda = lda.transform(X_test)
-    return X_lda, y_true
 
 def predict_labels_from_file(file_path):
     "This function takes as an input the file path of the EEG data-set under evaluation and returns the predicted labels for the new data."
@@ -178,17 +155,5 @@ def predict_labels_from_file(file_path):
 
     # Use the loaded classifier to predict labels for the new EEG signal
     predicted_labels = best_classifier_instance.predict(X_lda)
-
-    # Print or use the predicted labels as needed
-    #print("Predicted Labels for New Data:", predicted_labels_new)
-
-    # Calculate confusion matrix
-    #conf_matrix = confusion_matrix(y_true, predicted_labels_new)
-    #print("\nConfusion Matrix:")
-    #print(conf_matrix)
-
-    # Calculate accuracy
-    #accuracy = accuracy_score(y_true, predicted_labels_new)
-    #print("\nAccuracy:", accuracy)
 
     return predicted_labels

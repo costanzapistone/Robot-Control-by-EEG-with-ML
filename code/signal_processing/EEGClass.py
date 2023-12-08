@@ -77,7 +77,7 @@ class EEGClass():
         # Extract the number of events
         self.n_events = len(self.event_onsets)
 
-    def segment_trials(self):
+    def segmentation(self):
         """
         Segment the trials from the EEG data.
 
@@ -85,25 +85,25 @@ class EEGClass():
         - trials: a dictionary containing the segmented trials for each class
         """
         # Dictionary to store the trials, each class gets an entry
-        self.trials = {}
+        trials = {}
 
         # The time window (in samples) to extract for each trial, here 0.5 -- 4.5 seconds
-        self.win = np.arange(int(0.5 * self.s_freq), int(4.5 * self.s_freq))  # 400 samples
-        self.nsamples_win = len(self.win)
+        win = np.arange(int(0.5 * self.s_freq), int(4.5 * self.s_freq))  # 400 samples
+        nsamples_win = len(win)
 
         for cl, code in zip(self.cl_lab, np.unique(self.event_codes)):
             # Extract the onsets for the class
             cl_onsets = self.event_onsets[self.event_codes == code]
-            self.trials[cl] = np.zeros((self.n_channels, self.nsamples_win, len(cl_onsets)))
+            trials[cl] = np.zeros((self.n_channels, nsamples_win, len(cl_onsets)))
 
             # Extract each trial
             for i, onset in enumerate(cl_onsets):
-                self.trials[cl][:, :, i] = self.EEGdata[:, self.win + onset]
+                trials[cl][:, :, i] = self.EEGdata[:, win + onset]
 
-        return self.trials
+        return trials
 
 
-    def compute_abs_fft(self):
+    def fft(self, trials):
         """
         Compute the absolute value of the FFT of the trials.
 
@@ -114,27 +114,27 @@ class EEGClass():
         - fft_trials: a dictionary containing the FFT trials for each class
         """
         # Dictionary to store FFT trials
-        self.fft_trials = {}
+        fft_trials = {}
 
         for cl in self.cl_lab:
             # Get the segmented data for the current class
-            trials_cl = self.trials[cl]
+            trials_cl = trials[cl]
 
             # Allocate memory for the FFT trials
-            self.fft_trials[cl] = np.zeros_like(trials_cl, dtype=complex)
+            fft_trials[cl] = np.zeros_like(trials_cl, dtype=complex)
 
             # Compute FFT for each trial for selected channels
             for i in range(trials_cl.shape[2]):
-                self.fft_trials[cl][:, :, i] = fft(trials_cl[:, :, i], axis=1)
+                fft_trials[cl][:, :, i] = fft(trials_cl[:, :, i], axis=1)
 
         # Calculate the magnitude of the FFT
-        for cl in self.fft_trials:
-            self.fft_trials[cl] = np.abs(self.fft_trials[cl])
+        for cl in fft_trials:
+            fft_trials[cl] = np.abs(fft_trials[cl])
 
-        return self.fft_trials
+        return fft_trials
 
 
-    def lda(self, fft_trials, cl1, cl2):
+    def lda(self, fft_trials):
         """
         Perform LDA for dimensionality reduction.
 
@@ -148,23 +148,32 @@ class EEGClass():
         - y: the labels vector (-1 for class 1, 1 for class 2)
         """
         # Get the number of trials for each class
-        self.n_trials_cl1 = self.fft_trials[self.cl1].shape[2]
-        self.n_trials_cl2 = self.fft_trials[self.cl2].shape[2]
-        self.n_features = self.fft_trials[self.cl1].shape[0] * self.fft_trials[self.cl1].shape[1]
+        n_trials_cl1 = fft_trials[self.cl1].shape[2]
+        n_trials_cl2 = fft_trials[self.cl2].shape[2]
+        n_features = fft_trials[self.cl1].shape[0] * fft_trials[self.cl1].shape[1]
 
         # Reshape the FFT trials to fit the sklearn LDA function
-        self.X_cl1 = self.fft_trials[self.cl1].reshape(self.n_trials_cl1, self.n_features)
-        self.X_cl2 = self.fft_trials[self.cl2].reshape(self.n_trials_cl2, self.n_features)
+        X_cl1 = fft_trials[self.cl1].reshape(n_trials_cl1, n_features)
+        X_cl2 = fft_trials[self.cl2].reshape(n_trials_cl2, n_features)
 
-        self.X = np.concatenate((self.X_cl1, self.X_cl2), axis = 0)
+        X = np.concatenate((X_cl1, X_cl2), axis = 0)
 
         # Create the labels vector (-1 for class 1, 1 for class 2)
-        self.y = np.concatenate((-np.ones(self.n_trials_cl1), np.ones(self.n_trials_cl2)))
+        y = np.concatenate((-np.ones(n_trials_cl1), np.ones(n_trials_cl2)))
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
 
         lda = LinearDiscriminantAnalysis(n_components=1)
-        self.X_lda = lda.fit_transform(self.X, self.y)
+        X_train_lda = lda.fit_transform(X_train, y_train)
 
-        return self.X_lda, self.y
+        X_test_lda = lda.transform(X_test)
+
+        return X_train_lda, X_test_lda, y_train, y_test
+
+        #lda = LinearDiscriminantAnalysis(n_components=1)
+        #X_lda = lda.fit_transform(X, y)
+
+        #return X_lda, y
 
     def train_and_evaluate_classifiers(self, X_lda, y):
         """
@@ -179,7 +188,7 @@ class EEGClass():
         - auc_dict: a dictionary containing the AUC for each classifier
         """
         # Split the data into training and test sets
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X_lda, self.y, test_size=0.30, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X_lda, y, test_size = 0.30, random_state = 42)
 
         # Store the classifiers in a dictionary
         self.classifier_dict = {
@@ -197,23 +206,23 @@ class EEGClass():
         for clf_name, clf in self.classifier_dict.items():
 
             # Train the classifier
-            clf.fit(self.X_train, self.y_train)
+            clf.fit(X_train, y_train)
 
             # Compute the predictions
-            self.y_pred = clf.predict(self.X_test)
+            y_pred = clf.predict(X_test)
 
             # Compute the accuracy
-            self.acc = accuracy_score(self.y_test, self.y_pred)
+            self.acc = accuracy_score(y_test, y_pred)
         
             # Compute the AUC
             if hasattr(clf, "predict_proba"):
-                self.proba_class1 = clf.predict_proba(self.X_test)[:, 1]
+                proba_class1 = clf.predict_proba(X_test)[:, 1]
             else:
                 # use decision function for SVC classifier (SVM doesn't have predict_proba)
-                self.proba_class1 = clf.decision_function(self.X_test)
+                proba_class1 = clf.decision_function(X_test)
 
-            self.acc_dict[clf_name] = accuracy_score(self.y_test, self.y_pred)
-            self.auc_dict[clf_name] = roc_auc_score(self.y_test, self.proba_class1)
+            self.acc_dict[clf_name] = accuracy_score(y_test, y_pred)
+            self.auc_dict[clf_name] = roc_auc_score(y_test, proba_class1)
         
         return self.acc_dict, self.auc_dict
     
