@@ -46,9 +46,4 @@ with open('/home/costanza/Robot-Control-by-EEG-with-ML/code/predicted_labels/pre
 # Assuming you have a method to go back home
 LfD.go_to_home()
 
-# Save the recorded trajectory if needed
-#LfD.save()
-
-
 #if __name__ == '__main__':
-#    pass

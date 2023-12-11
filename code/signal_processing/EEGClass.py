@@ -102,6 +102,32 @@ class EEGClass():
 
         return trials
 
+    def sequential_segmentation(self):
+        """
+        Segment the trials from the EEG data.
+
+        Returns:
+        - trials: a dictionary containing all segmented trials, regardless of the class
+        """
+        # Dictionary to store the trials, each class gets an entry
+        trials = {}
+
+        # The time window (in samples) to extract for each trial, here 0.5 -- 4.5 seconds
+        win = np.arange(int(0.5 * self.s_freq), int(4.5 * self.s_freq)) # 400 samples
+        nsamples_win = len(win)
+
+        # Iterate over all the events
+        for code in np.unique(self.event_codes):
+
+            # Extract the onsets for all classes
+            events = self.event_onsets[self.event_codes == code]
+
+            # Extract each trial
+            for event in events:
+                trial = self.EEGdata[:, win + event]
+                trials.append(trial)
+
+        return trials
 
     def fft(self, trials):
         """
