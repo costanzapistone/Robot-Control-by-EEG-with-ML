@@ -110,24 +110,20 @@ class EEGClass():
         - trials: a dictionary containing all segmented trials, regardless of the class
         """
         # Dictionary to store the trials, each class gets an entry
-        trials = {}
+        trials_all = []
 
         # The time window (in samples) to extract for each trial, here 0.5 -- 4.5 seconds
         win = np.arange(int(0.5 * self.s_freq), int(4.5 * self.s_freq)) # 400 samples
-        nsamples_win = len(win)
+        
+        # Loop over all the events
+        for i in range(self.event_onsets.shape[1]):
+            # Extract the index of the event_onset
+            onset = self.event_onsets[:, i]
 
-        # Iterate over all the events
-        for code in np.unique(self.event_codes):
+            # Append the segmented trial to the list
+            trials_all.append(self.EEGdata[:, win + onset])
 
-            # Extract the onsets for all classes
-            events = self.event_onsets[self.event_codes == code]
-
-            # Extract each trial
-            for event in events:
-                trial = self.EEGdata[:, win + event]
-                trials.append(trial)
-
-        return trials
+        return trials_all
 
     def fft(self, trials):
         """
@@ -201,7 +197,7 @@ class EEGClass():
 
         #return X_lda, y
 
-    def train_and_evaluate_classifiers(self, X_lda, y):
+    def train_and_evaluate_classifiers(self, X_train_lda, X_test_lda, y_train, y_test):
         """
         Train the 5 classifiers and compute the accuracy and AUC for each one.
 
