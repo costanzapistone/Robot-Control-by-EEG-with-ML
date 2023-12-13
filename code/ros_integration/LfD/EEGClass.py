@@ -155,6 +155,30 @@ class EEGClass():
 
         return fft_trials
 
+    def fft_seq(self, trials_all):
+        """
+        Compute the absolute value of the FFT of the trials.
+
+        Parameters:
+        - trials_all: a dictionary containing all segmented trials, regardless of the class
+
+        Returns:
+        - fft_trials_all: a dictionary containing the FFT trials for each class
+        """
+        # Dictionary to store FFT trials
+        fft_trials_all = []
+
+        # Compute FFT for each trial for selected channels
+        for i in range(len(trials_all)):
+            fft_trials_all.append(fft(trials_all[i], axis=1))
+
+        # Calculate the magnitude of the FFT
+        for i in range(len(fft_trials_all)):
+            fft_trials_all[i] = np.abs(fft_trials_all[i])
+
+        return fft_trials_all
+
+
     def lda(self, fft_trials):
         """
         Perform LDA for dimensionality reduction. The data is split into training and test sets before performing LDA.
@@ -328,3 +352,63 @@ class EEGClass():
             self.auc_dict[clf_name] = roc_auc_score(y_test, proba_class1)
         
         return self.acc_dict, self.auc_dict
+    
+    def save_best_classifier(self, acc_avg_dict, auc_avg_dict):
+        """
+        Save the best classifier based on the accuracy and AUC results over all the 4 subjects.
+        In particular the chosen classifier is the one that has the best combined score of the two average metrics (accuracy and AUC weighted equally).
+        The trained classifier is then saved as a .joblib file in the folder 'trained_models'.
+
+        Parameters:
+        - acc_avg_dict: a dictionary containing the average accuracy among all the subjects for each classifier.
+        - auc_avg_dict: a dictionary containing the average AUC among all the subjects for each classifier.
+
+        Returns:
+        - best_clf: the best classifier
+
+        """
+        # Dictionary to store the combined score for each classifier
+        self.combined_score_dict = {}
+
+        for clf_name in self.classifier_dict.keys():
+            self.combined_score_dict[clf_name] = acc_avg_dict[clf_name] + auc_avg_dict[clf_name]
+
+        # Find the best classifier
+        self.best_clf = self.classifier_dict[self.best_clf_name]
+
+        # Save the best classifier
+        folder_path = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_models'
+        file_name = 'trained_best_classifier.joblib'
+        file_path = folder_path + '/' + file_name
+        joblib.dump(self.best_clf, file_path)
+
+        return self.best_clf
+    
+    def confusion_matrix(self, y_true, y_pred):
+        """
+        Compute the confusion matrix.
+
+        Parameters:
+        - y_true: the true labels
+        - y_pred: the predicted labels
+
+        Returns:
+        - cm: the confusion matrix
+        """
+        self.cm = confusion_matrix(y_true, y_pred)
+
+        # Plot the confusion matrix
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.imshow(self.cm, cmap=plt.cm.Blues,alpha=0.3)
+        for i in range(self.cm.shape[0]):
+            for j in range(self.cm.shape[1]):
+                ax.text(x=j, y=i, s=self.cm[i, j], va='center', ha='center', size='xx-large')
+
+        plt.title('Confusion matrix', fontsize=16)
+        plt.xlabel('Predicted label', fontsize=14)
+        plt.ylabel('True label', fontsize=14)
+        plt.show()
+
+        return self.cm
+    
+    

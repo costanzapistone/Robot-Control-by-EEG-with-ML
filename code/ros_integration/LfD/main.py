@@ -23,7 +23,6 @@ def execute_labeled_trajectory(label):
 LfD=LfD()
 LfD.home_gripper() # homeing the gripper allows to kinestheicall move it. 
 rospy.sleep(5)
-
 LfD.home()
 
 #%%

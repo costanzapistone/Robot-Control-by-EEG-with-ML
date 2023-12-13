@@ -131,7 +131,6 @@ auc_table.auto_set_column_width([0] + list(range(1, len(df_auc.columns))))
 axs[1].set_title('AUC', fontsize=13)
 
 plt.show()
-# %%
 
 #%%
 # Print in a table the results
