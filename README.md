@@ -21,7 +21,8 @@ Classificiers used:
 - Decision Tree (DT)
 - Naive Bayes (NB)
 
-The metrics used to compare the classifiers are: Accuracy and AUC. 
+The choice of the best classifier for robot control purposes has been done using a combined score. The score is derived by a simple arithmetic sum of AUC (Area Under the Curve) and ACC (Accuracy), with each metric contribuiting equally to the final result. 
+
 
 ---
 
