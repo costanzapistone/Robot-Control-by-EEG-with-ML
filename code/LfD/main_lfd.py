@@ -9,12 +9,11 @@ rospy.sleep(5)
 LfD.traj_rec()
 
 #%%
+# LfD.traj_rec_keyboard()
+#%%
 LfD.save()
 #%%
 LfD.load()
 #%%
 LfD.execute()
-# %%
-LfD.home()
-
 # %%
