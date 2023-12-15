@@ -141,7 +141,7 @@ class Panda():
             q_start.w=-q_start.w
         inner_prod=q_start.x*q_goal.x+q_start.y*q_goal.y+q_start.z*q_goal.z+q_start.w*q_goal.w
         theta= np.arccos(np.abs(inner_prod))
-        print(theta)
+        #print(theta)
         
         step_num_polar = math.floor(theta / interp_dist_polar)
         

@@ -144,12 +144,12 @@ class LfD(Panda):
 
                    
             if (self.recorded_gripper[0][self.time_index]-self.recorded_gripper[0][max([0,self.time_index-1])]) < -self.gripper_sensitivity:
-                print("closing gripper")
+                #print("closing gripper")
                 self.grasp_gripper(self.recorded_gripper[0][self.time_index], self.max_gripper_force)
                 time.sleep(0.1)
 
             if (self.recorded_gripper[0][self.time_index]-self.recorded_gripper[0][max([0,self.time_index-1])]) > self.gripper_sensitivity:
-                print("open gripper")
+                #print("open gripper")
                 self.move_gripper(self.recorded_gripper[0][self.time_index])
                 time.sleep(0.1)
 
