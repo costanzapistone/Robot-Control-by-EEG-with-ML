@@ -189,7 +189,7 @@ class EEGClass():
 
         X_test_lda = lda.transform(X_test)
 
-        return X_train_lda, X_test_lda, y_train, y_test, X_train, X_test
+        return X_train_lda, X_test_lda, y_train, y_test
 
     def train_classifiers(self, X_train_lda, y_train):
         """
