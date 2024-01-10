@@ -6,6 +6,24 @@ from pygame.locals import *
 import numpy as np
 import joblib
 
+def fft_one_segment(trial):
+    """
+    Compute the absolute value of the FFT of a single trial.
+
+    Parameters:
+    - trial: a single trial of shape (59, 400, 1)
+
+    Returns:
+    - fft_trial: the FFT of the input trial
+    """
+    # Compute FFT for the trial along the second axis
+    fft_trial = np.fft.fft(trial[:, :, 0], axis=1)
+
+    # Calculate the magnitude of the FFT
+    fft_trial = np.abs(fft_trial)
+
+    return fft_trial
+
 def lda_one_segment(fft_segment, subject):
     """
     I use the already fitted LDA model.
@@ -14,7 +32,6 @@ def lda_one_segment(fft_segment, subject):
     - segment: a segment of EEG data of shape (59, 400, 1)
 
     Returns:
-
     - X_test_lda: the dimensionality reduction of the FFT of the segment. Shape expected: (1, 1)
     """
 
