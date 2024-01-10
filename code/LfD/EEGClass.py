@@ -191,36 +191,6 @@ class EEGClass():
 
         return X_train_lda, X_test_lda, y_train, y_test
     
-    def lda_one_segment(fft_segment, subject):
-        """
-        This function, rather than the previous one, deals with just one segment at a time. It uses the already fitted LDA model.
-
-        Parameters:
-        - segment: a segment of EEG data of shape (59, 400, 1)
-        - subject: the subject for which the LDA model was trained        
-
-        Returns:
-        - X_test_lda: the dimensionality reduction of the FFT of the segment. Shape expected: (1, 1)
-
-        """
-
-        # Get the number of features
-        n_features = fft_segment.shape[0] * fft_segment.shape[1]
-        
-        # Reshape the fft_segment 
-        X = fft_segment.reshape(1, n_features)
-
-        # Trained model filename
-        input_filename = f'/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/lda_model_subject_{subject}.joblib'
-
-        # Load the pre-trained LDA model for the selected subject
-        lda_trained_model = joblib.load(input_filename)
-
-        # Apply the dimensionality reduction
-        X_test_lda = lda_trained_model.transform(X)
-
-        return X_test_lda
-
 
     def train_classifiers(self, X_train_lda, y_train):
         """
