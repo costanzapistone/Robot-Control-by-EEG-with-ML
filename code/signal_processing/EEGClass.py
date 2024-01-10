@@ -6,6 +6,7 @@ from scipy.io import loadmat
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.model_selection import train_test_split
 import joblib
+import os
 
 
 # Import the classifiers
@@ -155,7 +156,7 @@ class EEGClass():
 
         return fft_trials
 
-    def lda(self, fft_trials):
+    def lda(self, fft_trials, subject_index, save_folder="/home/costanza/Robot-Control-by-EEG-with-ML/trained_model"):
         """
         Perform LDA for dimensionality reduction. The data is split into training and test sets before performing LDA.
 
@@ -188,6 +189,13 @@ class EEGClass():
         X_train_lda = lda.fit_transform(X_train, y_train)
 
         X_test_lda = lda.transform(X_test)
+
+        # Create the save folder if it doesn't exist
+        os.makedirs(save_folder, exist_ok=True)
+
+        # Save the fitted LDA model in the specified folder
+        model_filename = os.path.join(save_folder, f"lda_model_subject_{subject_index}.joblib")
+        joblib.dump(lda, model_filename)
 
         return X_train_lda, X_test_lda, y_train, y_test
 

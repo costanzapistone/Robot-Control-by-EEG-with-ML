@@ -39,7 +39,7 @@ for subject, eeg_instance in zip(subjects_names, eeg_instances):
     fft_trials = eeg_instance.fft(trials)
     
     # Compute the LDA for dimensionality reduction
-    X_train, X_test, y_train, y_test = eeg_instance.lda(fft_trials)
+    X_train, X_test, y_train, y_test = eeg_instance.lda(fft_trials, subject)
     
     # Train the classifiers
     trained_models = eeg_instance.train_classifiers(X_train, y_train)
