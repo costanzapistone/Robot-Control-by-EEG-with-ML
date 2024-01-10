@@ -25,7 +25,7 @@ def lda_one_segment(fft_segment, subject):
     X = fft_segment.reshape(1, n_features)
 
     # Trained model filename
-    input_filename = f'/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/lda_model_subject_{subject}.joblib'
+    input_filename = f'trained_model/lda_model_subject_{subject}.joblib'
 
     # Load the pre-trained LDA model for the selected subject
     lda_trained_model = joblib.load(input_filename)
@@ -50,7 +50,8 @@ pygame.init()
 subject = 'a'
 
 # Load the .mat file
-mat_file = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{subject}.mat'
+mat_file = f'data/BCICIV_calib_ds1{subject}.mat'
+#mat_file = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{subject}.mat'
 data = loadmat(mat_file, struct_as_record=True)
 
 # Create an instance of the class EEGClass
@@ -88,7 +89,7 @@ while running:
             X_test_lda = lda_one_segment(segment, subject)
 
             # Load the trained model
-            trained_model = joblib.load('/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib')
+            trained_model = joblib.load('trained_model/trained_model_best.joblib')
 
             # Use the trained model to predict the class of the segment
             y_pred = trained_model.predict(X_test_lda)
