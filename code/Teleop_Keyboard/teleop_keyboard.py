@@ -17,6 +17,12 @@ class TeleopKeyboard(Panda):
     which provides an interface to the Franka Emika robots. This is done through the `teleop_twist_keyboard`
     package.
     """
+    # Define constants
+    SUBJECT = 'b'
+    MAT_FILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
+    MODEL_PATH = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib'
+    
+
     def __init__(self):
         # start up a ROS node
         rospy.init_node("teleop_node")
@@ -42,17 +48,30 @@ class TeleopKeyboard(Panda):
 
     def keyboard_read_callback(self, key_input):
         """
-        Function to process the key input from the keyboard. It returns a Twist message
-        With the keyboard I simulate the MI movement. Based on the button pressed I pick a segment 
+        Callback function that changes the robots end effector cartesian pose when 
+        one of the arrow keys are pressed. It changes the equilibrium pose by 5mm, given the key pressed
+        and direction assigned to that key.
+        
+        In the method below, the key pressed is used to predict the movement of the robot using the trained model.
+
+        Key - Action         
+        'i' = + z-axis
+        ',' = - z-axis
+        'j' = + y-axis
+        'l' = - y-axis
+        'u' = + x-axis
+        'o' = - x-axis
+        'm' = open the gripper
+        '.' = close the gripper
         """
         self.key_value = key_input
         print(self.key_value)
 
-        # Define the subject
-        subject = 'b'
-        # Load the .mat file
-        mat_file = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{subject}.mat'
-        data = loadmat(mat_file, struct_as_record=True)
+        # # Define the subject
+        # subject = 'b'
+        # # Load the .mat file
+        # mat_file = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{subject}.mat'
+        data = loadmat(self.MAT_FILE, struct_as_record=True)
         # Create an instance of the class EEGClass
         eeg_instance = EEGClass(data)
         # Segment the data
@@ -69,11 +88,13 @@ class TeleopKeyboard(Panda):
             # Get a random segment from the key 'right'
             self.key = list(fft_trials.keys())[1]
 
+        
+
         # Get a random segment based on the key
         segment = get_random_segment(fft_trials, self.key)
 
         # Apply LDA
-        X_test_lda = lda_one_segment(segment, subject)
+        X_test_lda = lda_one_segment(segment, self.SUBJECT)
 
         # Load the trained model
         trained_model = joblib.load('/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib')
@@ -82,7 +103,7 @@ class TeleopKeyboard(Panda):
         y_pred = trained_model.predict(X_test_lda)
 
         # Print the predicted label
-        print(y_pred)
+        print("Predicted movement from the ML model :", y_pred)
 
         # If the predicted label is -1, move the robot to the left
         if y_pred == -1:
@@ -115,10 +136,10 @@ class TeleopKeyboard(Panda):
             goal = array_quat_2_pose(self.curr_pos + np.array([0.0, 0.0, -self.move_distance]), quat_goal)
             self.goal_pub.publish(goal)
             self.key_value.linear.x = 0.0 
-            print("moved Robot down 1 mm")
+            print("moved Robot down 5 mm")
 
 
-        # + Y axis
+        # + Y axis - j key - left
         elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == 1.0:
             # Set this to the current value as it needs some orientation value to publish to /equilibrium_pose
             quat_goal = list_2_quaternion(self.curr_ori)
@@ -126,9 +147,9 @@ class TeleopKeyboard(Panda):
             goal = array_quat_2_pose(self.curr_pos + np.array([0.0, self.move_distance, 0.0]), quat_goal)
             self.goal_pub.publish(goal)
             self.key_value.angular.z = 0.0
-            print("moved Robot left 1 mm")
+            print("moved Robot left 5 mm")
             
-        # - Y axis
+        # - Y axis - l key - right
         elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
             # Set this to the current value as it needs some orientation value to publish to /equilibrium_pose
             quat_goal = list_2_quaternion(self.curr_ori)
@@ -136,7 +157,7 @@ class TeleopKeyboard(Panda):
             goal = array_quat_2_pose(self.curr_pos + np.array([0.0, -self.move_distance, 0.0]), quat_goal)
             self.goal_pub.publish(goal)
             self.key_value.angular.z = 0.0
-            print("moved Robot right 1 mm")
+            print("moved Robot right 5 mm")
 
 
         # + X axis
@@ -148,7 +169,7 @@ class TeleopKeyboard(Panda):
             self.goal_pub.publish(goal)
             self.key_value.angular.x = 0.0
             self.key_value.angular.z = 0.0
-            print("moved Robot left 1 mm")
+            print("moved Robot left 5 mm")
             
         # - X axis
         elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
@@ -159,7 +180,7 @@ class TeleopKeyboard(Panda):
             self.goal_pub.publish(goal)
             self.key_value.angular.x = 0.0
             self.key_value.angular.z = 0.0
-            print("moved Robot right 1 mm")
+            print("moved Robot right 5 mm")
 
         # Open the gripper (press m)
         elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == -1.0:     
@@ -177,7 +198,7 @@ class TeleopKeyboard(Panda):
             self.key_value.angular.z = 0.0
             print("Closed the gripper of 5 mm")
 
-    # return self.key_value
+
 
     # def keyboard_read_callback(self, key_input):
     #     """
