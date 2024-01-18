@@ -38,7 +38,7 @@ class TeleopKeyboard(Panda):
         self.key = None
 
         # List to store the key sequences
-        self.key_sequence = [] 
+        self.label_sequence = [] 
         
         # Subscriber to keyboard from teleop_twist_keyboard package
         self.key_sub = rospy.Subscriber("/cmd_vel", Twist, self.keyboard_read_callback)
@@ -205,44 +205,87 @@ class TeleopKeyboard(Panda):
         # Print the predicted label
         print("Predicted movement from the ML model :", y_pred)
 
-        # If the predicted label is -1, move the robot to the left
-        if y_pred == -1:
+        # # If the predicted label is -1, move the robot to the left
+        # if y_pred == -1:
+        #     self.key_value.linear.x = 0.0
+        #     self.key_value.angular.z = 1.0
+        # # If the predicted label is 1, move the robot to the right
+        # elif y_pred == 1:
+        #     self.key_value.linear.x = 0.0
+        #     self.key_value.angular.z = -1.0
+
+        ############################# Sequence of 2 labels - Performing 2^2 actions #########################################
+
+        # Append the label to the list
+        self.label_sequence.append(y_pred)
+        print("Label sequence:", self.label_sequence)
+
+        # Check if the list has 2 elements
+        if len(self.label_sequence) == 2:
+            print("Predicted Sequence:", self.label_sequence)
+            # Determine the action to perform based on the sequence of 2 labels
+            if self.label_sequence == [1, 1]:
+                # Move the robot right
+                self.key_value.linear.x = 0.0
+                self.key_value.angular.z = -1.0
+                self.move_right()
+            
+            elif self.label_sequence == [-1, 1]:
+                # Move the robot up
+                self.key_value.linear.x = 0.5
+                self.key_value.angular.z = 0.0
+                self.move_up()
+
+            elif self.label_sequence == [1, -1]:
+                # Move the robot down
+                self.key_value.linear.x = -0.5
+                self.key_value.angular.z = 0.0
+                self.move_down()
+
+            elif self.label_sequence == [-1, -1]:
+                # Move the robot left
+                self.key_value.linear.x = 0.0
+                self.key_value.angular.z = 1.0
+                self.move_left()
+
+            # Reset the list
+            self.label_sequence = []
+
+        else:
+            # If the list has less than 2 elements, do not move the robot
             self.key_value.linear.x = 0.0
-            self.key_value.angular.z = 1.0
-        # If the predicted label is 1, move the robot to the right
-        elif y_pred == 1:
-            self.key_value.linear.x = 0.0
-            self.key_value.angular.z = -1.0
+            self.key_value.angular.z = 0.0
 
+                            
 
-        # Move along + Z axis
-        if self.key_value.linear.x == 0.5 and self.key_value.angular.z == 0.0:
-            self.move_up()
+        # # Move along + Z axis
+        # if self.key_value.linear.x == 0.5 and self.key_value.angular.z == 0.0:
+        #     self.move_up()
 
-        # - Z axis
-        elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == 0.0:
-            self.move_down()
+        # # - Z axis
+        # elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == 0.0:
+        #     self.move_down()
 
-        # + Y axis - j key - left
-        elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == 1.0:
-            self.move_left()
+        # # + Y axis - j key - left
+        # elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == 1.0:
+        #     self.move_left()
          
-        # - Y axis - l key - right
-        elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
-            self.move_right()
+        # # - Y axis - l key - right
+        # elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
+        #     self.move_right()
 
-        # + X axis
-        elif self.key_value.linear.x == 0.5 and self.key_value.angular.z == 1.0:
-            self.move_forward()
+        # # + X axis
+        # elif self.key_value.linear.x == 0.5 and self.key_value.angular.z == 1.0:
+        #     self.move_forward()
        
-        # - X axis
-        elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
-            self.move_backward()
+        # # - X axis
+        # elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
+        #     self.move_backward()
 
-        # Open the gripper (press m)
-        elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == -1.0:
-            self.open_gripper()     
+        # # Open the gripper (press m)
+        # elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == -1.0:
+        #     self.open_gripper()     
 
-        # Close the gripper (press .)
-        elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == 1.0:
-            self.close_gripper()
+        # # Close the gripper (press .)
+        # elif self.key_value.linear.x == -0.5 and self.key_value.angular.z == 1.0:
+        #     self.close_gripper()
