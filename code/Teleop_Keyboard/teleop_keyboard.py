@@ -9,6 +9,7 @@ from scipy.io import loadmat
 from EEGClass import EEGClass
 from processing_functions import get_random_segment, lda_one_segment
 import joblib
+import random
 
 class TeleopKeyboard(Panda):
     """
@@ -211,27 +212,57 @@ class TeleopKeyboard(Panda):
 
         # Based on the key pressed, pick a random segment from a different key of the dictionary fft_trials.
         if self.key_value.linear.x == 0.0 and self.key_value.angular.z == 1.0:
-            # Get a random segment from the key 'left'
+            # Get key 'left'
             self.key = list(fft_trials.keys())[0]
             
         elif self.key_value.linear.x == 0.0 and self.key_value.angular.z == -1.0:
-            # Get a random segment from the key 'right'
+            # Get key 'right'
             self.key = list(fft_trials.keys())[1]
+        
+        ############################# Ensamble Learning - Majority Voting #########################################
 
-        # Get a random segment based on the key
-        segment = get_random_segment(fft_trials, self.key)
+        # Get 10 random segments
+        segments = random.sample(fft_trials[self.key], k=10)
 
-        # Apply LDA
-        X_test_lda = lda_one_segment(segment, self.SUBJECT)
+        # Create a list to store the predictions
+        predictions_list = []
 
-        # Load the trained model
-        trained_model = joblib.load(self.TRAINED_ML_MODEL_PATH)
+        # Iterate the same process over the k segments
+        for segment in segments:
+            # Apply LDA
+            X_test_lda = lda_one_segment(segment, self.SUBJECT)
 
-        # Use the trained model to predict the class of the segment
-        y_pred = trained_model.predict(X_test_lda)
+            # Load the trained model
+            trained_model = joblib.load(self.TRAINED_ML_MODEL_PATH)
+
+            # Use the trained model to predict the class of the segment
+            y_pred = trained_model.predict(X_test_lda)
+
+            # Append the prediction to the list
+            predictions_list.append(y_pred)
+
+        # Perform majority voting on the list of predictions
+        y_pred = self.majority_vote(predictions_list)
 
         # Print the predicted label
-        print("Predicted movement from the ML model :", y_pred)
+        print("Predicted movement from the ML model from Majority Voting :", y_pred)
+
+
+
+        # # Get a random segment based on the key
+        # segment = get_random_segment(fft_trials, self.key)
+
+        # # Apply LDA
+        # X_test_lda = lda_one_segment(segment, self.SUBJECT)
+
+        # # Load the trained model
+        # trained_model = joblib.load(self.TRAINED_ML_MODEL_PATH)
+
+        # # Use the trained model to predict the class of the segment
+        # y_pred = trained_model.predict(X_test_lda)
+
+        # # Print the predicted label
+        # print("Predicted movement from the ML model :", y_pred)
 
         # # If the predicted label is -1, move the robot to the left
         # if y_pred == -1:
