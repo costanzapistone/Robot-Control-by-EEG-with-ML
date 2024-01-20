@@ -148,6 +148,34 @@ class TeleopKeyboard(Panda):
         self.key_value.angular.z = 0.0
         print("Closed the gripper of 5 mm")    
         
+    def majority_vote(self, predictions):
+        """
+        Perform majority voting on a list of binary predictions.
+
+        Parameters:
+        - predictions (list): List of binary predictions (-1 or +1).
+
+        Returns:
+        - int: Majority voted prediction (+1 or -1).
+        """
+        if not predictions:
+            raise ValueError("Empty list of predictions.")
+
+        # Count occurrences of each class in the list
+        count_minus1 = predictions.count(-1)
+        count_plus1 = predictions.count(1)
+
+        # Determine the majority class
+        if count_minus1 > count_plus1:
+            return -1
+        elif count_plus1 > count_minus1:
+            return 1
+        else:
+            # If there's a tie, you can handle it based on your specific needs
+            # For simplicity, this implementation returns -1 in case of a tie
+            return -1
+        
+            
     def keyboard_read_callback(self, key_input):
         """
         Callback function that changes the robots end effector cartesian pose when 
