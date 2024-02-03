@@ -113,6 +113,7 @@ def psd(trials):
 
     return trial_PSD, freqs
 
+
 #%%
 # Calculate the PSD
 psd_r, freqs = psd(trials[cl1])
@@ -173,6 +174,7 @@ def plot_psd(trial_PSD, freqs, chan_ind, chan_lab=None, maxy=None):
 # %%
 plot_psd(trial_PSD,
          freqs,
+        #  chan_ind = [0,58,-1],
          chan_ind=[chan_names.index(ch) for ch in ['C3','Cz','C4']],
          chan_lab=['C3','Cz','C4'],
          maxy=500
@@ -227,10 +229,63 @@ def bandpass(trials, lo, hi, sfreq):
 
     return trials_filt
 
+# def cheby1_bandpass(trials, lo, hi, sfreq, rp=1, rs=5):
+#     """
+#     Designs and applies a Chebyshev Type I bandpass filter to the signal.
+
+#     Parameters
+#     ----------
+#     trials : 3d-array (channels x samples x trials)
+#         The EEGsignal
+#     lo : float
+#         Lower frequency bound (in Hz)
+#     hi : float
+#         Upper frequency bound (in Hz)
+#     sfreq : float
+#         Sampling frequency of the signal (in Hz)
+#     rp : float, optional
+#         Passband ripple (dB), default is 1
+#     rs : float, optional
+#         Stopband attenuation (dB), default is 5
+
+#     Returns
+#     -------
+#     trials_filt : 3d-array (channels x samples x trials)
+#         The bandpassed signal
+#     """
+#     # Design the filter
+#     a, b = sg.cheby1(N=6, rp=1, Wn=[lo/(sfreq/2.0), hi/(sfreq/2.0)], btype='band')
+
+#     # Apply to each trial
+#     ntrials = trials.shape[2]
+#     trials_filt = np.zeros((nchannels, nsamples, ntrials))
+#     for i in range(ntrials):
+#         trials_filt[:,:,i] = sg.filtfilt(a, b, trials[:,:,i], axis=1)
+
+#     return trials_filt
+
+# #%%
+# trials_filt_cheby = {cl1: cheby1_bandpass(trials[cl1], 8, 15, sfreq),
+#                      cl2: cheby1_bandpass(trials[cl2], 8, 15, sfreq)}
+
+
+# # %%
+# # Plot the PSD of the filtered signal
+
+# psd_r, freqs = psd(trials_filt_cheby[cl1])
+# psd_l, freqs = psd(trials_filt_cheby[cl2])
+# filtered_trial_PSD = {cl1: psd_r, cl2: psd_l}
+
+# plot_psd(filtered_trial_PSD,
+#         freqs,
+#         chan_ind=[chan_names.index(ch) for ch in ['C3','Cz','C4']],
+#         chan_lab=['C3','Cz','C4'],
+#         maxy=500
+#         )
 # %%
 # Apply the bandpass filter
-trials_filt = {cl1: bandpass(trials[cl1], 8, 15, sfreq),
-               cl2: bandpass(trials[cl2], 8, 15, sfreq)}
+trials_filt = {cl1: bandpass(trials[cl1], 7, 15, sfreq),
+               cl2: bandpass(trials[cl2], 7, 15, sfreq)}
 
 # %%
 # Plot the PSD of the filtered signal
@@ -305,6 +360,30 @@ def plot_logvar(trials):
 
 #%%
 plot_logvar(filtered_trials_logvar)
+
+#%%
+def calculate_std(trials):
+    """
+    Calculates the standard deviation of each channel.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEG signal
+
+    Returns
+    -------
+    feat : 2d-array (channels x trials)
+        The standard deviation features for each channel 
+    """
+    return np.std(trials, axis=1)
+
+# Apply to the filtered signal
+filtered_trials_std = {cl1: calculate_std(trials_filt[cl1]),
+                          cl2: calculate_std(trials_filt[cl2])}
+
+print('shape of filtered_trials_std[cl1]:', filtered_trials_std[cl1].shape)
+
 # %%
 # we want to maximize the variance between two classes.
 
