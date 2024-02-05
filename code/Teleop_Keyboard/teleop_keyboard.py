@@ -9,7 +9,6 @@ from scipy.io import loadmat
 from EEGClass import EEGClass
 from processing_functions import get_random_segment, lda_one_segment
 import joblib
-import random
 
 class TeleopKeyboard(Panda):
     """
@@ -19,10 +18,15 @@ class TeleopKeyboard(Panda):
     package.
     """
     # Define constants
-    SUBJECT = 'b'
+    SUBJECT = 'a'
     MAT_FILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
-    TRAINED_ML_MODEL_PATH = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib'
+    TRAINED_MODEL_LR = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib'
     
+    # Trained models for the Ensamble Learning
+    TRAINED_MODEL_DT = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_DT.joblib'
+    TRAINED_MODEL_KNN = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_KNN.joblib'
+    TRAINED_MODEL_SVM = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_SVM.joblib'
+    TRAINED_MODEL_NB = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_NB.joblib'
 
     def __init__(self):
         # start up a ROS node
@@ -151,7 +155,7 @@ class TeleopKeyboard(Panda):
         
     def majority_vote(self, predictions):
         """
-        Perform majority voting on a list of binary predictions.
+        Perform majority voting on a list of multiple binary predictions from the same trained model.
 
         Parameters:
         - predictions (list): List of binary predictions (-1 or +1).
@@ -176,7 +180,6 @@ class TeleopKeyboard(Panda):
             # For simplicity, this implementation returns -1 in case of a tie
             return -1
         
-            
     def keyboard_read_callback(self, key_input):
         """
         Callback function that changes the robots end effector cartesian pose when 
@@ -220,32 +223,58 @@ class TeleopKeyboard(Panda):
             self.key = list(fft_trials.keys())[1]
         
         ############################# Ensamble Learning - Majority Voting #########################################
+        # Get a random segment based on the key
+        segment = get_random_segment(fft_trials, self.key)
 
-        # Get 10 random segments
-        segments = random.sample(fft_trials[self.key], k=10)
+        # Apply LDA
+        X_test_lda = lda_one_segment(segment, self.SUBJECT)
 
-        # Create a list to store the predictions
+        # Load the trained models
+        trained_model_lr = joblib.load(self.TRAINED_MODEL_LR)
+        trained_model_dt = joblib.load(self.TRAINED_MODEL_DT)
+        trained_model_knn = joblib.load(self.TRAINED_MODEL_KNN)
+        trained_model_svm = joblib.load(self.TRAINED_MODEL_SVM)
+        trained_model_nb = joblib.load(self.TRAINED_MODEL_NB)
+
+        # Create a list of the trained models
+        trained_models = [trained_model_lr, trained_model_dt, trained_model_knn, trained_model_svm, trained_model_nb]
+
+        # Use the trained models to predict the class of the segment
         predictions_list = []
-
-        # Iterate the same process over the k segments
-        for segment in segments:
-            # Apply LDA
-            X_test_lda = lda_one_segment(segment, self.SUBJECT)
-
-            # Load the trained model
-            trained_model = joblib.load(self.TRAINED_ML_MODEL_PATH)
-
-            # Use the trained model to predict the class of the segment
-            y_pred = trained_model.predict(X_test_lda)
-
-            # Append the prediction to the list
+        for model in trained_models:
+            y_pred = model.predict(X_test_lda)
             predictions_list.append(y_pred)
-
+        print("Predicted movement from the ML models :", predictions_list)
         # Perform majority voting on the list of predictions
         y_pred = self.majority_vote(predictions_list)
 
-        # Print the predicted label
-        print("Predicted movement from the ML model from Majority Voting :", y_pred)
+        print("Predicted movement from Majority Voting :", y_pred)
+
+        # Get 10 random segments
+        # random_segments = get_random_segments(fft_trials, self.key, num_segments=10)
+
+        # # Create a list to store the predictions
+        # predictions_list = []
+
+        # # Iterate the same process over the k segments
+        # for segment in random_segments:
+        #     # Apply LDA
+        #     X_test_lda = lda_one_segment(segment, self.SUBJECT)
+
+        #     # Load the trained model
+        #     trained_model = joblib.load(self.TRAINED_ML_MODEL_PATH)
+
+        #     # Use the trained model to predict the class of the segment
+        #     y_pred = trained_model.predict(X_test_lda)
+
+        #     # Append the prediction to the list
+        #     predictions_list.append(y_pred)
+
+        # # Perform majority voting on the list of predictions
+        # y_pred = self.majority_vote(predictions_list)
+
+        # # Print the predicted label
+        # print("Predicted movement from the ML model from Majority Voting :", y_pred)
 
 
 
@@ -277,7 +306,6 @@ class TeleopKeyboard(Panda):
 
         # Append the label to the list
         self.label_sequence.append(y_pred)
-        print("Label sequence:", self.label_sequence)
 
         # Check if the list has 2 elements
         if len(self.label_sequence) == 2:

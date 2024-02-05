@@ -3,7 +3,7 @@ import numpy as np
 from scipy.io import loadmat
 
 #%%
-sub = 'g'
+sub = 'f'
 
 # Load the MATLAB file 
 EEG_data = loadmat(f"/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{sub}.mat", struct_as_record = True)
@@ -134,6 +134,7 @@ lda = LinearDiscriminantAnalysis(n_components=1)
 X_train_lda = lda.fit_transform(X_train, y_train)
 X_test_lda = lda.transform(X_test)
 
+
 # Save the lda model
 import os
 import joblib
@@ -149,7 +150,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 
-# Create the classifiers and store in a dict
+# Create the classifiers and store in a 
 classifiers = {'knn': KNeighborsClassifier(n_neighbors=3),
                'nb': GaussianNB(),
                'lr': LogisticRegression(),
@@ -165,4 +166,76 @@ for classifier in classifiers:
     model_filename = os.path.join(save_path_folder, f"{classifier}_{sub}.joblib")
     joblib.dump(trained_models[classifier], model_filename)
 
+# %%# Calibration Curves
+
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from sklearn.calibration import CalibrationDisplay
+
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
+
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o", "X"]
+
+for i, (name, clf) in enumerate(classifiers.items()):
+    display = CalibrationDisplay.from_estimator(
+        clf,
+        X_test_lda,
+        y_test,
+        n_bins=10,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display
+
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title(f"Calibration Plots for {sub} - Before Calibration")
+
+plt.show()
+
+# %%
+# Classifiers Calibration
+from sklearn.calibration import calibration_curve
+from sklearn.calibration import CalibratedClassifierCV
+
+# Train the classifiers with calibration
+calibrated_models = {}
+for classifier in classifiers:
+    # Use CalibratedClassifierCV for calibration
+    calibrated_model = CalibratedClassifierCV(classifiers[classifier], method='isotonic', cv='prefit')
+    calibrated_model.fit(X_train_lda, y_train)
+    calibrated_models[classifier] = calibrated_model
+
+#%%
+# Plot the calibration curves
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
+
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o", "X"]
+
+for i, (name, clf) in enumerate(calibrated_models.items()):
+    display = CalibrationDisplay.from_estimator(
+        clf,
+        X_test_lda,
+        y_test,
+        n_bins=10,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display
+
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title(f"Calibration Plots for {sub} - After Calibration")
+
+plt.show()
 # %%

@@ -56,5 +56,28 @@ def lda_one_segment(fft_segment, subject):
 def get_random_segment(data, key):
     segments = data[key]
     random_segment_index = np.random.randint(segments.shape[2])
+    
     return segments[:, :, random_segment_index]
 
+def get_random_segments(data, key, num_segments=10):
+    """
+    This function returns a list of random segments from the data based on the key.
+
+    Parameters:
+    - data: the data dictionary
+    - key: the key of the data dictionary
+    - num_segments: the number of segments to return
+
+    Returns:
+    - random_segments: a list of random segments of shape (59, 400, 1)
+    """
+    segments = data[key]
+    num_total_segments = segments.shape[2]
+    
+    if num_segments > num_total_segments:
+        raise ValueError("Requested number of segments exceeds the total number of segments available.")
+
+    random_segment_indices = np.random.choice(num_total_segments, size=num_segments, replace=False)
+    random_segments = [segments[:, :, idx] for idx in random_segment_indices]
+
+    return random_segments

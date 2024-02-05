@@ -57,6 +57,12 @@ best_classifier = max(combined_score_dict, key=combined_score_dict.get)
 # Save the best classifier in a .joblib file
 import joblib
 joblib.dump(trained_models[best_classifier], '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib')
+print("The best classifier is: ", best_classifier)
+#%%
+# Save the other classifiers in .joblib files
+for classifier in trained_models:
+    if classifier != best_classifier:
+        joblib.dump(trained_models[classifier], '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_' + classifier + '.joblib')
 
 #%%
 # Print in a table the results
@@ -95,3 +101,5 @@ print(df_accuracy)
 
 print("\nAUC:")
 print(df_auc)
+
+# %%

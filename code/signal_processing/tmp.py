@@ -144,11 +144,11 @@ from numpy import std
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 
-# evaluate model
-cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-n_scores = cross_val_score(model_lr, X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
-# report performance
-print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+# # evaluate model
+# cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+# n_scores = cross_val_score(model_lr, X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
+# # report performance
+# print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
 
 # %%
 
@@ -200,11 +200,11 @@ model_lr = Pipeline([
 
 calibration_model_lr = CalibratedClassifierCV(model_lr, method='isotonic', cv=None)
 
-# evaluate model
-cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-n_scores = cross_val_score(calibration_model_lr, X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
-# report performance
-print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+# # evaluate model
+# cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+# n_scores = cross_val_score(calibration_model_lr, X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
+# # report performance
+# print('Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
 fig = plt.figure(figsize=(10, 10))
 gs = GridSpec(4, 2)
 colors = plt.get_cmap("Dark2")
