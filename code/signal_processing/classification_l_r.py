@@ -124,9 +124,12 @@ ntrials_cl2 = fft_trials[cl2].shape[2]
 n_features = fft_trials[cl1].shape[0] * fft_trials[cl1].shape[1]
 
 # # Reshape the fft_trials data to fit the sklearn LDA
+
+# Method 1
 # X_cl1 = fft_trials[cl1].reshape(ntrials_cl1, n_features)
 # X_cl2 = fft_trials[cl2].reshape(ntrials_cl2, n_features)
 
+#Method 2
 X_cl1_t = fft_trials[cl1].transpose(2,1,0)
 X_cl2_t = fft_trials[cl2].transpose(2,1,0)
 X_cl1 = X_cl1_t.reshape(X_cl1_t.shape[0], -1)
@@ -150,7 +153,9 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
 #%% 
 # PCA
-# PCA (Principal Component Analysis) is a widely used linear dimensionality reduction technique that aims to transform high-dimensional data into a lower-dimensional space while preserving as much of the data's variance as possible. The principal components represent the directions of maximum variance in the data, and by choosing a subset of these components, PCA can reduce the number of features in the data.
+# PCA (Principal Component Analysis) is a widely used linear dimensionality reduction technique that aims to transform high-dimensional data into
+# a lower-dimensional space while preserving as much of the data's variance as possible. The principal components represent the directions of maximum
+# variance in the data, and by choosing a subset of these components, PCA can reduce the number of features in the data.
 
 X_pca = PCA(n_components=2).fit_transform(X)
 
