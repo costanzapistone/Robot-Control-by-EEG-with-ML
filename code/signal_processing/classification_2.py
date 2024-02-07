@@ -56,7 +56,7 @@ print('Number of classes:', nclasses)
 trials = {}
 
 # The time window in samples to extract for each trial, here 0.5 -- 4.5 seconds
-win = np.arange(int(0.5 * sfreq), int(2.5 * sfreq))
+win = np.arange(int(0.5 * sfreq), int(4.5 * sfreq))
 
 # Length of the time window
 nsamples = len(win)
@@ -104,7 +104,7 @@ def psd(trials):
     ntrials = trials.shape[2]
     # Put 201 if the window is 4 seconds, 101 if the window is 2 seconds.
     # The second dimension corresponds to the number of points in the frequency domain for the PSD.
-    trial_PSD = np.zeros((nchannels, 101, ntrials))
+    trial_PSD = np.zeros((nchannels, 201, ntrials))
 
     for trial in range(ntrials):
         for ch in range(nchannels):
@@ -121,6 +121,23 @@ psd_l, freqs = psd(trials[cl2])
 trial_PSD = {cl1: psd_r, cl2: psd_l}
 # %%
 import matplotlib.pyplot as plt
+
+def calculate_rms(trials):
+    """
+    Calculates the Root Mean Square (RMS) of each channel.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEG signal
+
+    Returns
+    -------
+    rms_values : 2d-array (channels x trials)
+        The RMS values for each channel 
+    """
+    return np.sqrt(np.mean(trials**2, axis=1))
+
 
 def plot_psd(trial_PSD, freqs, chan_ind, chan_lab=None, maxy=None):
     """
@@ -229,59 +246,6 @@ def bandpass(trials, lo, hi, sfreq):
 
     return trials_filt
 
-# def cheby1_bandpass(trials, lo, hi, sfreq, rp=1, rs=5):
-#     """
-#     Designs and applies a Chebyshev Type I bandpass filter to the signal.
-
-#     Parameters
-#     ----------
-#     trials : 3d-array (channels x samples x trials)
-#         The EEGsignal
-#     lo : float
-#         Lower frequency bound (in Hz)
-#     hi : float
-#         Upper frequency bound (in Hz)
-#     sfreq : float
-#         Sampling frequency of the signal (in Hz)
-#     rp : float, optional
-#         Passband ripple (dB), default is 1
-#     rs : float, optional
-#         Stopband attenuation (dB), default is 5
-
-#     Returns
-#     -------
-#     trials_filt : 3d-array (channels x samples x trials)
-#         The bandpassed signal
-#     """
-#     # Design the filter
-#     a, b = sg.cheby1(N=6, rp=1, Wn=[lo/(sfreq/2.0), hi/(sfreq/2.0)], btype='band')
-
-#     # Apply to each trial
-#     ntrials = trials.shape[2]
-#     trials_filt = np.zeros((nchannels, nsamples, ntrials))
-#     for i in range(ntrials):
-#         trials_filt[:,:,i] = sg.filtfilt(a, b, trials[:,:,i], axis=1)
-
-#     return trials_filt
-
-# #%%
-# trials_filt_cheby = {cl1: cheby1_bandpass(trials[cl1], 8, 15, sfreq),
-#                      cl2: cheby1_bandpass(trials[cl2], 8, 15, sfreq)}
-
-
-# # %%
-# # Plot the PSD of the filtered signal
-
-# psd_r, freqs = psd(trials_filt_cheby[cl1])
-# psd_l, freqs = psd(trials_filt_cheby[cl2])
-# filtered_trial_PSD = {cl1: psd_r, cl2: psd_l}
-
-# plot_psd(filtered_trial_PSD,
-#         freqs,
-#         chan_ind=[chan_names.index(ch) for ch in ['C3','Cz','C4']],
-#         chan_lab=['C3','Cz','C4'],
-#         maxy=500
-#         )
 # %%
 # Apply the bandpass filter
 trials_filt = {cl1: bandpass(trials[cl1], 7, 15, sfreq),
@@ -361,29 +325,69 @@ def plot_logvar(trials):
 #%%
 plot_logvar(filtered_trials_logvar)
 
-#%%
-def calculate_std(trials):
-    """
-    Calculates the standard deviation of each channel.
+# rms_trials_cl1 = calculate_rms(trials[cl1])
+# rms_trials_cl2 = calculate_rms(trials[cl2])
+# print('Shape of rms_trials_cl1:', rms_trials_cl1.shape)
+# print('Shape of rms_trials_cl2:', rms_trials_cl2.shape)
 
-    Parameters
-    ----------
-    trials : 3d-array (channels x samples x trials)
-        The EEG signal
+#%% 
+# import matplotlib.pyplot as plt
+# def plot_rms(trials):
 
-    Returns
-    -------
-    feat : 2d-array (channels x trials)
-        The standard deviation features for each channel 
-    """
-    return np.std(trials, axis=1)
+#     """
+#     Plots the RMS features for each channel as a bar chart.
 
-# Apply to the filtered signal
-filtered_trials_std = {cl1: calculate_std(trials_filt[cl1]),
-                          cl2: calculate_std(trials_filt[cl2])}
+#     Parameters
+#     ----------
+#     trials : 2-d array (channels x trials)
+#         The RMS values for each channel
 
-print('shape of filtered_trials_std[cl1]:', filtered_trials_std[cl1].shape)
+#     """
+#     plt.figure(figsize=(12, 5))
 
+#     x0 = np.arange(nchannels)
+#     x1 = np.arange(nchannels) + 0.4
+
+#     y0 = np.mean(trials[cl1], axis=1)
+#     y1 = np.mean(trials[cl2], axis=1)
+
+#     plt.bar(x0, y0, width=0.5, color='b')
+#     plt.bar(x1, y1, width=0.4, color='r')
+
+#     plt.xlim(-0.5, nchannels+0.5)
+
+#     plt.gca().yaxis.grid(True)
+#     plt.title('RMS features for each channel')
+#     plt.xlabel('Channels')
+#     plt.ylabel('RMS')
+#     plt.legend(cl_lab) 
+
+# rms_trials = {cl1: rms_trials_cl1, cl2: rms_trials_cl2}
+# plot_rms(rms_trials)
+
+# #%%
+# def calculate_std(trials):
+#     """
+#     Calculates the standard deviation of each channel.
+
+#     Parameters
+#     ----------
+#     trials : 3d-array (channels x samples x trials)
+#         The EEG signal
+
+#     Returns
+#     -------
+#     feat : 2d-array (channels x trials)
+#         The standard deviation features for each channel 
+#     """
+#     return np.std(trials, axis=1)
+
+# # Apply to the filtered signal
+# filtered_trials_std = {cl1: calculate_std(trials_filt[cl1]),
+#                           cl2: calculate_std(trials_filt[cl2])}
+
+# print('shape of filtered_trials_std[cl1]:', filtered_trials_std[cl1].shape)
+# plot_logvar(filtered_trials_std)
 # %%
 # we want to maximize the variance between two classes.
 
@@ -437,6 +441,11 @@ def apply_mix(W, trials):
         trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
     return trials_csp
 
+#%%
+# X = np.concatenate((trials_filt[cl1], trials_filt[cl2]))
+# y = np.concatenate((-np.ones(trials_filt[cl1].shape[2]), np.ones(trials_filt[cl2].shape[2])))
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 # %%
 # Apply the functions 
 W = csp(trials_filt[cl1], trials_filt[cl2])
@@ -450,6 +459,107 @@ trials_logvar_csp = {cl1: logvar(trials_csp[cl1]),
                      cl2: logvar(trials_csp[cl2])}
 
 plot_logvar(trials_logvar_csp)
+
+#%%
+# trials_std_csp = {cl1: calculate_std(trials_csp[cl1]), cl2: calculate_std(trials_csp[cl2])}
+# plot_logvar(trials_std_csp)
+
+#%%
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from sklearn.calibration import CalibrationDisplay
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from numpy import mean
+from sklearn.model_selection import train_test_split
+from numpy import std
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+X = np.concatenate((trials_logvar_csp[cl1], trials_logvar_csp[cl2]))
+y = np.concatenate((-np.ones(trials_logvar_csp[cl1].shape[0]), np.ones(trials_logvar_csp[cl2].shape[0])))
+
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+
+# Create the classifiers and store in a 
+classifiers = {'knn': KNeighborsClassifier(n_neighbors=3),
+               'nb': GaussianNB(),
+               'lr': LogisticRegression(),
+               'dt': DecisionTreeClassifier(),
+               'svm': SVC(probability=True),
+               'lda': LinearDiscriminantAnalysis()}
+
+#%%Train the classifiers
+trained_models = {}
+for classifier in classifiers:
+    trained_models[classifier] = classifiers[classifier].fit(X_train, y_train)
+
+#%%
+from sklearn.metrics import accuracy_score
+
+# Evaluate the accuracy of each trained classifier
+accuracy_scores = {}
+for classifier in trained_models:
+    # Predict the labels using the trained classifier
+    y_pred = trained_models[classifier].predict(X_test)
+    
+    # Calculate the accuracy score
+    accuracy = accuracy_score(y_test, y_pred)
+    
+    # Store the accuracy score
+    accuracy_scores[classifier] = accuracy
+
+# Print the accuracy scores
+for classifier, accuracy in accuracy_scores.items():
+    print(f'Accuracy of {classifier}: {accuracy:.2f}')
+
+#%%    
+#evaluate the classifiers
+for classifier in classifiers:
+
+    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+    n_scores = cross_val_score(classifiers[classifier], X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
+    # report performance
+    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
+
+# %%# Calibration Curves
+
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from sklearn.calibration import CalibrationDisplay
+
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
+
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o", "X", "P"]
+
+for i, (name, clf) in enumerate(classifiers.items()):
+    display = CalibrationDisplay.from_estimator(
+        clf,
+        X_test,
+        y_test,
+        n_bins=10,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display
+
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title(f"Calibration Plots  - Before Calibration")
+
+plt.show()
+
 # %%
 # We can see the result also by plotting the PSD of the CSP-filtered signal
 psd_r, freqs = psd(trials_csp[cl1])
