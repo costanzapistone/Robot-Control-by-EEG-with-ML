@@ -126,6 +126,10 @@ n_features = fft_trials[cl1].shape[0] * fft_trials[cl1].shape[1]
 # # Reshape the fft_trials data to fit the sklearn LDA
 
 # Method 1
+X_cl1_t = fft_trials[cl1].transpose(2,1,0)
+X_cl2_t = fft_trials[cl2].transpose(2,1,0)
+X_cl1_tt = X_cl1_t.reshape(ntrials_cl1, n_features)
+X_cl2_tt = X_cl2_t.reshape(ntrials_cl2, n_features)
 # X_cl1 = fft_trials[cl1].reshape(ntrials_cl1, n_features)
 # X_cl2 = fft_trials[cl2].reshape(ntrials_cl2, n_features)
 
@@ -135,13 +139,18 @@ X_cl2_t = fft_trials[cl2].transpose(2,1,0)
 X_cl1 = X_cl1_t.reshape(X_cl1_t.shape[0], -1)
 X_cl2 = X_cl2_t.reshape(X_cl2_t.shape[0], -1)
 
-print(X_cl1.shape)
-print(X_cl2.shape)
+# Print the shape of the FFT data
+print('Shape of X_cl1:', X_cl1.shape)
+print('Shape of X_cl2:', X_cl2.shape)
 
 X = np.concatenate((X_cl1, X_cl2), axis = 0)
 
 # Create the labels for the LDA (cl1 = 0, cl2 = 1)
 y = np.concatenate((np.zeros(ntrials_cl1), np.ones(ntrials_cl2)))
+
+# Check if datasets are equal
+are_equal = np.array_equal(X_cl1, X_cl1_tt)
+print("Are X_cl1 and X_cl1_tt equal?", are_equal)
 
 #%%
 # Dimensionality reduction
@@ -192,9 +201,9 @@ plt.show()
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-lda = LinearDiscriminantAnalysis(n_components=1)
-X_train_lda = lda.fit_transform(X_train, y_train)
-X_test_lda = lda.transform(X_test)
+lda = LinearDiscriminantAnalysis(n_components=1, )
+X_train = lda.fit_transform(X_train, y_train)
+X_test = lda.transform(X_test)
 
 #%%
 # Plot the data before and after LDA in a scatter plot
@@ -204,33 +213,6 @@ plt.scatter(X_cl1_t[:, 0], X_cl1_t[:, 1], label=cl1, color='r')
 plt.scatter(X_cl2_t[:, 0], X_cl2_t[:, 1], label=cl2, color='b')
 
 plt.xlabel('')
-#%%
-# X_cl1_t = np.concatenate([fft_trials[cl1][:, :, i].flatten()[np.newaxis, :] for i in range(ntrials_cl1)], axis=0)
-# X_cl2_t = np.concatenate([fft_trials[cl2][:, :, i].flatten()[np.newaxis, :] for i in range(ntrials_cl2)], axis=0)
-
-# X_cl1_t = fft_trials[cl1].transpose(2,1,0)
-# X_cl2_t = fft_trials[cl2].transpose(2,1,0)
-
-# X_cl1_reshape = X_cl1_t.reshape(X_cl1_t.shape[0], -1)
-# X_cl2_reshape = X_cl2_t.reshape(X_cl2_t.shape[0], -1)
-
-# X_cl1_flatt = X_cl1_t.flatten(start_dim=1)
-# X_cl2_flatt = X_cl2_t.flatten(start_dim=1)
-
-# # Check if X_cl1 and X_cl1_t are the same
-# print(np.all(X_cl1_flatt == X_cl1_reshape))
-
-# X_cl1_tt = X_cl1_t.transpose(0,2,1)
-# X_cl2_tt = X_cl2_t.transpose(0,2,1)
-
-# X_cl1_tt_re = X_cl1_tt.reshape(X_cl1_t.shape[0], -1)
-# X_cl2_tt_re = X_cl2_tt.reshape(X_cl2_t.shape[0], -1)
-
-# print(X_cl1_tt_re.shape)
-
-# # Check if they are the same
-
-# print(np.all(X_cl1_tt_re == X_cl1))
 
 #%%
 # Save the lda model
@@ -251,10 +233,6 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 from numpy import mean
 from numpy import std
-
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X_lda, y, test_size=0.3, random_state=42)
-
 
 # Create the classifiers and store in a 
 classifiers = {'knn': KNeighborsClassifier(n_neighbors=3),
@@ -300,7 +278,7 @@ for classifier in classifiers:
     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
 
 
-# %%# Calibration Curves
+#%% Calibration Curves
 
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -334,7 +312,6 @@ plt.show()
 
 # %%
 # Classifiers Calibration
-from sklearn.calibration import calibration_curve
 from sklearn.calibration import CalibratedClassifierCV
 
 # Train the classifiers with calibration
