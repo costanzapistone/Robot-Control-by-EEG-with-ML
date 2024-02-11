@@ -464,101 +464,101 @@ plot_logvar(trials_logvar_csp)
 # trials_std_csp = {cl1: calculate_std(trials_csp[cl1]), cl2: calculate_std(trials_csp[cl2])}
 # plot_logvar(trials_std_csp)
 
-#%%
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from sklearn.calibration import CalibrationDisplay
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import RepeatedStratifiedKFold
-from numpy import mean
-from sklearn.model_selection import train_test_split
-from numpy import std
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+# #%%
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.tree import DecisionTreeClassifier
+# from sklearn.svm import SVC
+# import matplotlib.pyplot as plt
+# from matplotlib.gridspec import GridSpec
+# from sklearn.calibration import CalibrationDisplay
+# from sklearn.model_selection import cross_val_score
+# from sklearn.model_selection import RepeatedStratifiedKFold
+# from numpy import mean
+# from sklearn.model_selection import train_test_split
+# from numpy import std
+# from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-X = np.concatenate((trials_logvar_csp[cl1], trials_logvar_csp[cl2]))
-y = np.concatenate((-np.ones(trials_logvar_csp[cl1].shape[0]), np.ones(trials_logvar_csp[cl2].shape[0])))
+# X = np.concatenate((trials_logvar_csp[cl1], trials_logvar_csp[cl2]))
+# y = np.concatenate((-np.ones(trials_logvar_csp[cl1].shape[0]), np.ones(trials_logvar_csp[cl2].shape[0])))
 
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+# #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
 
-# Create the classifiers and store in a 
-classifiers = {'knn': KNeighborsClassifier(n_neighbors=3),
-               'nb': GaussianNB(),
-               'lr': LogisticRegression(),
-               'dt': DecisionTreeClassifier(),
-               'svm': SVC(probability=True),
-               'lda': LinearDiscriminantAnalysis()}
+# # Create the classifiers and store in a 
+# classifiers = {'knn': KNeighborsClassifier(n_neighbors=3),
+#                'nb': GaussianNB(),
+#                'lr': LogisticRegression(),
+#                'dt': DecisionTreeClassifier(),
+#                'svm': SVC(probability=True),
+#                'lda': LinearDiscriminantAnalysis()}
 
-#%%Train the classifiers
-trained_models = {}
-for classifier in classifiers:
-    trained_models[classifier] = classifiers[classifier].fit(X_train, y_train)
+# #%%Train the classifiers
+# trained_models = {}
+# for classifier in classifiers:
+#     trained_models[classifier] = classifiers[classifier].fit(X_train, y_train)
 
-#%%
-from sklearn.metrics import accuracy_score
+# #%%
+# from sklearn.metrics import accuracy_score
 
-# Evaluate the accuracy of each trained classifier
-accuracy_scores = {}
-for classifier in trained_models:
-    # Predict the labels using the trained classifier
-    y_pred = trained_models[classifier].predict(X_test)
+# # Evaluate the accuracy of each trained classifier
+# accuracy_scores = {}
+# for classifier in trained_models:
+#     # Predict the labels using the trained classifier
+#     y_pred = trained_models[classifier].predict(X_test)
     
-    # Calculate the accuracy score
-    accuracy = accuracy_score(y_test, y_pred)
+#     # Calculate the accuracy score
+#     accuracy = accuracy_score(y_test, y_pred)
     
-    # Store the accuracy score
-    accuracy_scores[classifier] = accuracy
+#     # Store the accuracy score
+#     accuracy_scores[classifier] = accuracy
 
-# Print the accuracy scores
-for classifier, accuracy in accuracy_scores.items():
-    print(f'Accuracy of {classifier}: {accuracy:.2f}')
+# # Print the accuracy scores
+# for classifier, accuracy in accuracy_scores.items():
+#     print(f'Accuracy of {classifier}: {accuracy:.2f}')
 
-#%%    
-#evaluate the classifiers
-for classifier in classifiers:
+# #%%    
+# #evaluate the classifiers
+# for classifier in classifiers:
 
-    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-    n_scores = cross_val_score(classifiers[classifier], X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
-    # report performance
-    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+#     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+#     n_scores = cross_val_score(classifiers[classifier], X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
+#     # report performance
+#     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
 
 
-# %%# Calibration Curves
+# # %%# Calibration Curves
 
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from sklearn.calibration import CalibrationDisplay
+# import matplotlib.pyplot as plt
+# from matplotlib.gridspec import GridSpec
+# from sklearn.calibration import CalibrationDisplay
 
-fig = plt.figure(figsize=(10, 10))
-gs = GridSpec(4, 2)
-colors = plt.get_cmap("Dark2")
+# fig = plt.figure(figsize=(10, 10))
+# gs = GridSpec(4, 2)
+# colors = plt.get_cmap("Dark2")
 
-ax_calibration_curve = fig.add_subplot(gs[:2, :2])
-calibration_displays = {}
-markers = ["^", "v", "s", "o", "X", "P"]
+# ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+# calibration_displays = {}
+# markers = ["^", "v", "s", "o", "X", "P"]
 
-for i, (name, clf) in enumerate(classifiers.items()):
-    display = CalibrationDisplay.from_estimator(
-        clf,
-        X_test,
-        y_test,
-        n_bins=10,
-        name=name,
-        ax=ax_calibration_curve,
-        color=colors(i),
-        marker=markers[i],
-    )
-    calibration_displays[name] = display
+# for i, (name, clf) in enumerate(classifiers.items()):
+#     display = CalibrationDisplay.from_estimator(
+#         clf,
+#         X_test,
+#         y_test,
+#         n_bins=10,
+#         name=name,
+#         ax=ax_calibration_curve,
+#         color=colors(i),
+#         marker=markers[i],
+#     )
+#     calibration_displays[name] = display
 
-ax_calibration_curve.grid()
-ax_calibration_curve.set_title(f"Calibration Plots  - Before Calibration")
+# ax_calibration_curve.grid()
+# ax_calibration_curve.set_title(f"Calibration Plots  - Before Calibration")
 
-plt.show()
+# plt.show()
 
 # %%
 # We can see the result also by plotting the PSD of the CSP-filtered signal

@@ -153,77 +153,44 @@ are_equal = np.array_equal(X_cl1, X_cl1_tt)
 print("Are X_cl1 and X_cl1_tt equal?", are_equal)
 
 #%%
-# Dimensionality reduction
-
+from sklearn.preprocessing import StandardScaler
+std_scaler = StandardScaler()
+X = std_scaler.fit_transform(X)
+#%%
+# Dimensionality reduction with PCA
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-# from umap import UMAP
 
-#%% 
-# PCA
-# PCA (Principal Component Analysis) is a widely used linear dimensionality reduction technique that aims to transform high-dimensional data into
-# a lower-dimensional space while preserving as much of the data's variance as possible. The principal components represent the directions of maximum
-# variance in the data, and by choosing a subset of these components, PCA can reduce the number of features in the data.
+nums = np.arange(100)
 
-X_pca = PCA(n_components=2).fit_transform(X)
+var_ratio = []
+for num in nums:
+  pca = PCA(n_components=num)
+  pca.fit(X)
+  var_ratio.append(np.sum(pca.explained_variance_ratio_))
 
-# Plot the reduced data
+import matplotlib.pyplot as plt
 
-plt.figure(figsize=(8,8))
-sc = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y)
-plt.legend(handles=sc.legend_elements()[0], labels=list(range(2)))#%%
-plt.title('Scatter plot of reduced data using PCA')
-plt.show()
+plt.figure(figsize=(10,5))
+plt.grid()
+plt.plot(nums,var_ratio,marker='o')
+plt.xlabel('Number of Components')
+plt.ylabel('Explained Variance Ratio')
+plt.title('Total Variance across the number of components')
+# %%
+X = pca.transform(X)
 
-#%%
-# LDA
 
-X_lda = LDA(n_components=1).fit_transform(X, y)
+# %%
+# Split the data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-plt.figure(figsize=(8,8))
-plt.scatter(X_lda, np.zeros_like(X_lda), c=y)
-plt.legend(handles=sc.legend_elements()[0], labels=list(range(2)))
-plt.title('Scatter plot of reduced data using LDA')
-plt.show()
+# Create the LDA model
+lda = LinearDiscriminantAnalysis()
+X_train_lda = lda.fit_transform(X_train, y_train)
+X_test_lda = lda.transform(X_test)
+# %%
 
-#%%
-# t-SNE
-X_tsne = TSNE(n_jobs=-1).fit_transform(X)
-
-plt.figure(figsize=(8,8))
-sc = plt.scatter(X_tsne[:, 0], X_tsne[:, 1], c=y)
-plt.legend(handles=sc.legend_elements()[0], labels=list(range(2)))
-plt.title('Scatter plot of reduced data using t-SNE')
-plt.show()
-
-#%%
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-lda = LinearDiscriminantAnalysis(n_components=1, )
-X_train = lda.fit_transform(X_train, y_train)
-X_test = lda.transform(X_test)
-
-#%%
-# Plot the data before and after LDA in a scatter plot
-plt.figure()
-
-plt.scatter(X_cl1_t[:, 0], X_cl1_t[:, 1], label=cl1, color='r')
-plt.scatter(X_cl2_t[:, 0], X_cl2_t[:, 1], label=cl2, color='b')
-
-plt.xlabel('')
-
-#%%
-# Save the lda model
-import os
-import joblib
-# save_path_folder = "/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/2"
-# os.makedirs(save_path_folder, exist_ok=True)
-# model_filename = os.path.join(save_path_folder, f"lda_{sub}.joblib")
-# joblib.dump(lda, model_filename)
-
-#%%
+# %%
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
@@ -244,7 +211,7 @@ classifiers = {'knn': KNeighborsClassifier(n_neighbors=3),
 # Train the classifiers
 trained_models = {}
 for classifier in classifiers:
-    trained_models[classifier] = classifiers[classifier].fit(X_train, y_train)
+    trained_models[classifier] = classifiers[classifier].fit(X_train_lda, y_train)
 
     # Save the trained model
     # model_filename = os.path.join(save_path_folder, f"{classifier}_{sub}.joblib")
@@ -257,7 +224,7 @@ from sklearn.metrics import accuracy_score
 accuracy_scores = {}
 for classifier in trained_models:
     # Predict the labels using the trained classifier
-    y_pred = trained_models[classifier].predict(X_test)
+    y_pred = trained_models[classifier].predict(X_test_lda)
     
     # Calculate the accuracy score
     accuracy = accuracy_score(y_test, y_pred)
@@ -268,85 +235,4 @@ for classifier in trained_models:
 # Print the accuracy scores
 for classifier, accuracy in accuracy_scores.items():
     print(f'Accuracy of {classifier}: {accuracy:.2f}')
-#%%
-# Evaluate the classifiers
-for classifier in classifiers:
-
-    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
-    n_scores = cross_val_score(classifiers[classifier], X_lda, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
-    # report performance
-    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
-
-
-#%% Calibration Curves
-
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from sklearn.calibration import CalibrationDisplay
-
-fig = plt.figure(figsize=(10, 10))
-gs = GridSpec(4, 2)
-colors = plt.get_cmap("Dark2")
-
-ax_calibration_curve = fig.add_subplot(gs[:2, :2])
-calibration_displays = {}
-markers = ["^", "v", "s", "o", "X"]
-
-for i, (name, clf) in enumerate(classifiers.items()):
-    display = CalibrationDisplay.from_estimator(
-        clf,
-        X_test,
-        y_test,
-        n_bins=10,
-        name=name,
-        ax=ax_calibration_curve,
-        color=colors(i),
-        marker=markers[i],
-    )
-    calibration_displays[name] = display
-
-ax_calibration_curve.grid()
-ax_calibration_curve.set_title(f"Calibration Plots for {sub} - Before Calibration")
-
-plt.show()
-
-# %%
-# Classifiers Calibration
-from sklearn.calibration import CalibratedClassifierCV
-
-# Train the classifiers with calibration
-calibrated_models = {}
-for classifier in classifiers:
-    # Use CalibratedClassifierCV for calibration
-    calibrated_model = CalibratedClassifierCV(classifiers[classifier], method='isotonic', cv='prefit')
-    calibrated_model.fit(X_train_lda, y_train)
-    calibrated_models[classifier] = calibrated_model
-
-#%%
-# Plot the calibration curves
-fig = plt.figure(figsize=(10, 10))
-gs = GridSpec(4, 2)
-colors = plt.get_cmap("Dark2")
-
-ax_calibration_curve = fig.add_subplot(gs[:2, :2])
-calibration_displays = {}
-markers = ["^", "v", "s", "o", "X"]
-
-for i, (name, clf) in enumerate(calibrated_models.items()):
-    display = CalibrationDisplay.from_estimator(
-        clf,
-        X_test_lda,
-        y_test,
-        n_bins=10,
-        name=name,
-        ax=ax_calibration_curve,
-        color=colors(i),
-        marker=markers[i],
-    )
-    calibration_displays[name] = display
-
-ax_calibration_curve.grid()
-ax_calibration_curve.set_title(f"Calibration Plots for {sub} - After Calibration")
-
-plt.show()
 # %%

@@ -22,7 +22,7 @@ class TeleopKeyboard(Panda):
     MAT_FILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
     TRAINED_MODEL_LR = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_best.joblib'
     
-    # Trained models for the Ensamble Learning
+    # Trained models
     TRAINED_MODEL_DT = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_DT.joblib'
     TRAINED_MODEL_KNN = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_KNN.joblib'
     TRAINED_MODEL_SVM = '/home/costanza/Robot-Control-by-EEG-with-ML/trained_model/trained_model_SVM.joblib'
