@@ -330,65 +330,6 @@ plot_logvar(filtered_trials_logvar)
 # print('Shape of rms_trials_cl1:', rms_trials_cl1.shape)
 # print('Shape of rms_trials_cl2:', rms_trials_cl2.shape)
 
-#%% 
-# import matplotlib.pyplot as plt
-# def plot_rms(trials):
-
-#     """
-#     Plots the RMS features for each channel as a bar chart.
-
-#     Parameters
-#     ----------
-#     trials : 2-d array (channels x trials)
-#         The RMS values for each channel
-
-#     """
-#     plt.figure(figsize=(12, 5))
-
-#     x0 = np.arange(nchannels)
-#     x1 = np.arange(nchannels) + 0.4
-
-#     y0 = np.mean(trials[cl1], axis=1)
-#     y1 = np.mean(trials[cl2], axis=1)
-
-#     plt.bar(x0, y0, width=0.5, color='b')
-#     plt.bar(x1, y1, width=0.4, color='r')
-
-#     plt.xlim(-0.5, nchannels+0.5)
-
-#     plt.gca().yaxis.grid(True)
-#     plt.title('RMS features for each channel')
-#     plt.xlabel('Channels')
-#     plt.ylabel('RMS')
-#     plt.legend(cl_lab) 
-
-# rms_trials = {cl1: rms_trials_cl1, cl2: rms_trials_cl2}
-# plot_rms(rms_trials)
-
-# #%%
-# def calculate_std(trials):
-#     """
-#     Calculates the standard deviation of each channel.
-
-#     Parameters
-#     ----------
-#     trials : 3d-array (channels x samples x trials)
-#         The EEG signal
-
-#     Returns
-#     -------
-#     feat : 2d-array (channels x trials)
-#         The standard deviation features for each channel 
-#     """
-#     return np.std(trials, axis=1)
-
-# # Apply to the filtered signal
-# filtered_trials_std = {cl1: calculate_std(trials_filt[cl1]),
-#                           cl2: calculate_std(trials_filt[cl2])}
-
-# print('shape of filtered_trials_std[cl1]:', filtered_trials_std[cl1].shape)
-# plot_logvar(filtered_trials_std)
-# %%
 # we want to maximize the variance between two classes.
 
 # %%

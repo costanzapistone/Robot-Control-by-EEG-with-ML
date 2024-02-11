@@ -121,8 +121,103 @@ scatter_logvar(logvar_trials, cl_lab, [0, -1])
 scatter_std(std_trials, cl_lab, [0, -1])
 scatter_rms(rms_trials, cl_lab, [0, -1])
 
+#%%
+# Band-Pass Filtering
+
+def butter_bandpass(trials, lowcut, highcut, fs, order=5):
+    """
+    Design a band-pass filter using the Butterworth method.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEGsignal for one class.
+    lowcut : float
+        The lower cut-off frequency of the band-pass filter.
+    highcut : float
+        The higher cut-off frequency of the band-pass filter.
+
+    fs : float
+        The sampling frequency of the signal.
+    
+    order : int
+        The order of the filter.
+    
+    Returns
+    -------
+    trials_filt : 3d-array (channels x samples x trials)
+        The band-pass filtered signal for one class.
+    """
+    from scipy.signal import butter, lfilter
+
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype='band')
+    ntrials = trials.shape[2]
+    trials_filt = np.zeros((nchannels, nsamples, ntrials))
+    for i in range(ntrials):
+        trials_filt[:,:,i] = lfilter(b, a, trials[:,:,i], axis=1)
+
+    return trials_filt
+
+# Band-pass filter the data
+lowcut = 8
+highcut = 30
+
+trials_filt_butt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq),
+                    cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq)}
+
+
+#%% 
+# FIR Filtering
+
+def fir_bandpass(trials, lowcut, highcut, fs, numtaps=100):
+    """
+    Design a band-pass filter using the FIR window method.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEGsignal for one class.
+    lowcut : float
+        The lower cut-off frequency of the band-pass filter.
+    highcut : float
+        The higher cut-off frequency of the band-pass filter.
+
+    fs : float
+        The sampling frequency of the signal.
+    
+    numtaps : int
+        The number of taps (the length of the filter).
+
+    Returns
+    -------
+    trials_filt : 3d-array (channels x samples x trials)
+        The band-pass filtered signal for one class.
+    """
+    from scipy.signal import firwin, lfilter
+
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    taps = numtaps
+    b = firwin(taps, [low, high], pass_zero=False)
+    ntrials = trials.shape[2]
+    trials_filt_fir = np.zeros((nchannels, nsamples, ntrials))
+    for i in range(ntrials):
+        trials_filt_fir[:,:,i] = lfilter(b, 1.0, trials[:,:,i], axis=1)
+
+    return trials_filt_fir
+
+# Band-pass filter the data
+trials_filt_fir = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq),
+                   cl2: butter_bandpass(trials[cl2], 8, 30, sfreq)}
+
+
+
 # %%
-# Common Spatial Patterns (CSP)
+# Common Spatial Patterns (CSP) butterworth 
 
 from numpy import linalg
 
@@ -172,30 +267,73 @@ def apply_mix(W, trials):
     for i in range(ntrials):
         trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
     return trials_csp
-W = csp(trials[cl1], trials[cl2])
+W = csp(trials_filt_butt[cl1], trials_filt_butt[cl2])
 
-trials_csp = {cl1: apply_mix(W, trials[cl1]),
-              cl2: apply_mix(W, trials[cl2])
-              }
+trials_csp_butt = {cl1: apply_mix(W, trials_filt_butt[cl1]),
+                   cl2: apply_mix(W, trials_filt_butt[cl2])
+                  }
 
 # Compute the features
-logvar_trials_csp = {cl1: logvar(trials_csp[cl1]),cl2: logvar(trials_csp[cl2])}
-std_trials_csp = {cl1: std(trials_csp[cl1]), cl2: std(trials_csp[cl2])}
-rms_trials_csp = {cl1: rms(trials_csp[cl1]), cl2: rms(trials_csp[cl2])}
+logvar_trials_csp_butt = {cl1: logvar(trials_csp_butt[cl1]),cl2: logvar(trials_csp_butt[cl2])}
+std_trials_csp_butt = {cl1: std(trials_csp_butt[cl1]), cl2: std(trials_csp_butt[cl2])}
+rms_trials_csp_butt = {cl1: rms(trials_csp_butt[cl1]), cl2: rms(trials_csp_butt[cl2])}
 
 # Bar Plots
 plt.figure(figsize=(15, 3))
-plot_logvar(logvar_trials_csp, cl_lab, cl1, cl2, nchannels)
+plot_logvar(logvar_trials_csp_butt, cl_lab, cl1, cl2, nchannels)
 plt.figure(figsize=(15, 3))
-plot_std(std_trials_csp, cl_lab, cl1, cl2, nchannels)
+plot_std(std_trials_csp_butt, cl_lab, cl1, cl2, nchannels)
 plt.figure(figsize=(15, 3))
-plot_rms(rms_trials_csp, cl_lab, cl1, cl2, nchannels)
+plot_rms(rms_trials_csp_butt, cl_lab, cl1, cl2, nchannels)
 plt.show()
 
 # Scatter Plot of the features 
-scatter_logvar(logvar_trials_csp, cl_lab, [0, -1])
-scatter_std(std_trials_csp, cl_lab, [0, -1])
-scatter_rms(rms_trials_csp, cl_lab, [0, -1])
+scatter_logvar(logvar_trials_csp_butt, cl_lab, [0, -1])
+scatter_std(std_trials_csp_butt, cl_lab, [0, -1])
+scatter_rms(rms_trials_csp_butt, cl_lab, [0, -1])
 
 
 # %%
+# Common Spatial Patterns (CSP) FIR
+
+W = csp(trials_filt_fir[cl1], trials_filt_fir[cl2])
+
+trials_csp_fir = {cl1: apply_mix(W, trials_filt_fir[cl1]),
+                    cl2: apply_mix(W, trials_filt_fir[cl2])
+                    }
+
+# Compute the features
+logvar_trials_csp_fir = {cl1: logvar(trials_csp_fir[cl1]),cl2: logvar(trials_csp_fir[cl2])}
+std_trials_csp_fir = {cl1: std(trials_csp_fir[cl1]), cl2: std(trials_csp_fir[cl2])}
+rms_trials_csp_fir = {cl1: rms(trials_csp_fir[cl1]), cl2: rms(trials_csp_fir[cl2])}
+
+# Bar Plots
+plt.figure(figsize=(15, 3))
+plot_logvar(logvar_trials_csp_fir, cl_lab, cl1, cl2, nchannels)
+plt.figure(figsize=(15, 3))
+plot_std(std_trials_csp_fir, cl_lab, cl1, cl2, nchannels)
+plt.figure(figsize=(15, 3))
+plot_rms(rms_trials_csp_fir, cl_lab, cl1, cl2, nchannels)
+
+plt.show()
+
+# Scatter Plot of the features
+scatter_logvar(logvar_trials_csp_fir, cl_lab, [0, -1])
+scatter_std(std_trials_csp_fir, cl_lab, [0, -1])
+scatter_rms(rms_trials_csp_fir, cl_lab, [0, -1])
+
+#%%
+
+# Classification with different classifiers
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import DecisionBoundaryDisplay
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+

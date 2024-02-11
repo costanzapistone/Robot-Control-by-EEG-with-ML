@@ -121,8 +121,55 @@ scatter_logvar(logvar_trials, cl_lab, [0, -1])
 scatter_std(std_trials, cl_lab, [0, -1])
 scatter_rms(rms_trials, cl_lab, [0, -1])
 
+#%%
+# Band-Pass Filtering
+
+def butter_bandpass(trials, lowcut, highcut, fs, order=5):
+    """
+    Design a band-pass filter using the Butterworth method.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEGsignal for one class.
+    lowcut : float
+        The lower cut-off frequency of the band-pass filter.
+    highcut : float
+        The higher cut-off frequency of the band-pass filter.
+
+    fs : float
+        The sampling frequency of the signal.
+    
+    order : int
+        The order of the filter.
+    
+    Returns
+    -------
+    trials_filt : 3d-array (channels x samples x trials)
+        The band-pass filtered signal for one class.
+    """
+    from scipy.signal import butter, lfilter
+
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype='band')
+    ntrials = trials.shape[2]
+    trials_filt = np.zeros((nchannels, nsamples, ntrials))
+    for i in range(ntrials):
+        trials_filt[:,:,i] = lfilter(b, a, trials[:,:,i], axis=1)
+
+    return trials_filt
+
+# Band-pass filter the data
+lowcut = 8
+highcut = 30
+
+trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq),
+                    cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq)}
+
 # %%
-# Common Spatial Patterns (CSP)
+# Common Spatial Patterns (CSP) butterworth 
 
 from numpy import linalg
 
@@ -172,30 +219,140 @@ def apply_mix(W, trials):
     for i in range(ntrials):
         trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
     return trials_csp
-W = csp(trials[cl1], trials[cl2])
 
-trials_csp = {cl1: apply_mix(W, trials[cl1]),
-              cl2: apply_mix(W, trials[cl2])
-              }
 
-# Compute the features
-logvar_trials_csp = {cl1: logvar(trials_csp[cl1]),cl2: logvar(trials_csp[cl2])}
-std_trials_csp = {cl1: std(trials_csp[cl1]), cl2: std(trials_csp[cl2])}
-rms_trials_csp = {cl1: rms(trials_csp[cl1]), cl2: rms(trials_csp[cl2])}
+# %%
+# Common Spatial Patterns (CSP) 
+train_percentage = 0.7
 
-# Bar Plots
-plt.figure(figsize=(15, 3))
-plot_logvar(logvar_trials_csp, cl_lab, cl1, cl2, nchannels)
-plt.figure(figsize=(15, 3))
-plot_std(std_trials_csp, cl_lab, cl1, cl2, nchannels)
-plt.figure(figsize=(15, 3))
-plot_rms(rms_trials_csp, cl_lab, cl1, cl2, nchannels)
+# Calculate the number of trials for each class the above percentage boils down to
+ntrain_r = int(trials_filt[cl1].shape[2] * train_percentage)
+ntrain_f = int(trials_filt[cl2].shape[2] * train_percentage)
+ntest_r = trials_filt[cl1].shape[2] - ntrain_r
+ntest_f = trials_filt[cl2].shape[2] - ntrain_f
+
+# Splitting the frequency filtered signal into a train and test set
+train = {cl1: trials_filt[cl1][:,:,:ntrain_r],
+         cl2: trials_filt[cl2][:,:,:ntrain_f]}
+
+test = {cl1: trials_filt[cl1][:,:,ntrain_r:],
+        cl2: trials_filt[cl2][:,:,ntrain_f:]}
+
+# Train the CSP on the training set only
+W = csp(train[cl1], train[cl2])
+
+# Apply the CSP on both the training and test set
+train[cl1] = apply_mix(W, train[cl1])
+train[cl2] = apply_mix(W, train[cl2])
+test[cl1] = apply_mix(W, test[cl1])
+test[cl2] = apply_mix(W, test[cl2])
+
+# Select only the first and last components for classification
+comp = np.array([0,-1])
+train[cl1] = train[cl1][comp,:,:]
+train[cl2] = train[cl2][comp,:,:]
+test[cl1] = test[cl1][comp,:,:]
+test[cl2] = test[cl2][comp,:,:]
+
+# Calculate the log-var
+train[cl1] = logvar(train[cl1])
+train[cl2] = logvar(train[cl2])
+test[cl1] = logvar(test[cl1])
+test[cl2] = logvar(test[cl2])
+
+X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
+y_train = np.zeros(X_train.shape[0], dtype=int)
+y_train[:ntrain_r] = 1
+y_test = np.zeros(X_test.shape[0], dtype=int)
+y_test[:ntest_r] = 1
+#%%
+# Classification with different classifiers
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import DecisionBoundaryDisplay
+from sklearn.naive_bayes import GaussianNB
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from numpy import mean
+from numpy import std
+
+# Create a dictionary to store the classifiers
+classifiers = {'LDA': LinearDiscriminantAnalysis(),
+               'NB': GaussianNB(),
+               'SVM': make_pipeline(StandardScaler(), SVC(gamma='auto')),
+               'RF': RandomForestClassifier(n_estimators=100),
+               'DT': DecisionTreeClassifier(),
+               'LR': LogisticRegression()
+            }
+
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+# Train and test the classifiers with cross-validation
+
+for classifier in classifiers:
+    # Train the classifier
+    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+    scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
+
+    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
+
+
+    
+# %%
+# Calibration Plots
+
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from sklearn.calibration import CalibrationDisplay
+
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
+
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o"]
+for i, (name, clf) in enumerate(classifiers.items()):
+    clf.fit(X_train, y_train)
+    display = CalibrationDisplay.from_estimator(
+        clf,
+        X_test,
+        y_test,
+        n_bins=10,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display
+
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title("Calibration plots")
+
+# Add histogram of predicted probabilities for each of the 6 classifier 
+grid_positions = [(2, 0), (2, 1), (3, 0), (3, 1)]
+
+clf_list = list(classifiers.items())
+for i, (_, name) in enumerate(clf_list):
+    row, col = grid_positions[i]
+    ax = fig.add_subplot(gs[row, col])
+
+    ax.hist(
+        calibration_displays[name].y_prob,
+        range=(0, 1),
+        bins=10,
+        label=name,
+        color=colors(i),
+    )
+    ax.set(title=name, xlabel="Mean predicted probability", ylabel="Count")
+
+plt.tight_layout()
 plt.show()
-
-# Scatter Plot of the features 
-scatter_logvar(logvar_trials_csp, cl_lab, [0, -1])
-scatter_std(std_trials_csp, cl_lab, [0, -1])
-scatter_rms(rms_trials_csp, cl_lab, [0, -1])
-
-
+plt.show()
 # %%

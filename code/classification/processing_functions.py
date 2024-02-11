@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
+from numpy import linalg
 
 def psd(trials, sfreq):
     """
@@ -68,8 +69,8 @@ def plot_PSD(psd_all, freqs, chan_names, cl):
         # Add labels and grid
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Power Spectral Density (dB)')
-        plt.xlim(0,40)
-        plt.ylim(0, 450)
+        plt.xlim(0,30)
+        plt.ylim(0, 350)
         plt.legend()
         plt.grid(True)
 
@@ -209,7 +210,7 @@ def plot_std(trials, cl_lab, cl1, cl2, nchannels):
     plt.ylabel('Standard deviation')
     plt.legend(cl_lab)
 
-def scatter_logvar(logvar_trials, cl_lab, chan_names):
+def scatter_logvar(logvar_trials, cl_lab, chan_ind):
     """
     Scatter plot of the log-variance features for 2 channels (C3 and C4).
     Each data point on the plot represents the log-variance values of C3 and C4 for a single trial.
@@ -232,7 +233,8 @@ def scatter_logvar(logvar_trials, cl_lab, chan_names):
     -------
     Scatter plot of the log-variance features for 2 channels (C3 and C4).
     """
-    channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
+    # channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
+    channels_ind = chan_ind
     cl1 = cl_lab[0]
     cl2 = cl_lab[1]
 
@@ -245,7 +247,7 @@ def scatter_logvar(logvar_trials, cl_lab, chan_names):
     plt.legend()
     plt.show()
 
-def scatter_rms(rms_trials, cl_lab, chan_names):
+def scatter_rms(rms_trials, cl_lab, chan_ind):
     """
     Scatter plot of the RMS features for 2 channels (C3 and C4).
     Each data point on the plot represents the RMS values of C3 and C4 for a single trial.
@@ -268,7 +270,8 @@ def scatter_rms(rms_trials, cl_lab, chan_names):
     -------
     Scatter plot of the RMS features for 2 channels (C3 and C4).
     """
-    channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
+    # channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
+    channels_ind = chan_ind
     cl1 = cl_lab[0]
     cl2 = cl_lab[1]
 
@@ -281,7 +284,7 @@ def scatter_rms(rms_trials, cl_lab, chan_names):
     plt.legend()
     plt.show()
 
-def scatter_std(std_trials, cl_lab, chan_names):
+def scatter_std(std_trials, cl_lab, chan_ind):
     """
     Scatter plot of the standard deviation features for 2 channels (C3 and C4).
     Each data point on the plot represents the standard deviation values of C3 and C4 for a single trial.
@@ -304,7 +307,8 @@ def scatter_std(std_trials, cl_lab, chan_names):
     -------
     Scatter plot of the standard deviation features for 2 channels (C3 and C4).
     """
-    channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
+    # channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
+    channels_ind = chan_ind
     cl1 = cl_lab[0]
     cl2 = cl_lab[1]
 
