@@ -167,6 +167,47 @@ highcut = 30
 
 trials_filt_butt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq),
                     cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq)}
+#%%
+# Compute the PSD
+psd_cl1, freqs = psd(trials_filt_butt[cl1], sfreq)
+psd_cl2, freqs = psd(trials_filt_butt[cl2], sfreq)
+psd_all_butt = {cl1: psd_cl1, cl2: psd_cl2}
+
+# Plot
+plot_PSD(psd_all_butt, freqs, chan_names, cl_lab)
+    
+# %%
+# Statistical analysis
+from processing_functions import logvar, std, rms
+from processing_functions import plot_logvar, plot_std, plot_rms
+import matplotlib.pyplot as plt
+# Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
+# Std (Standard Deviation): Std is a measure of the amount of variation or dispersion of a set of values. It is the square root of the variance.
+# RMS (Root Mean Square): RMS is a measure of the magnitude of a set of values. It is the square root of the mean of the squares of the values.
+
+# For each channel and class, compute the logvar, std, and rms across trials
+
+# Compute the features
+logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
+std_trials = {cl1: std(trials[cl1]), cl2: std(trials[cl2])}
+rms_trials = {cl1: rms(trials[cl1]), cl2: rms(trials[cl2])}
+
+# Bar Plots
+plt.figure(figsize=(15, 3))
+plot_logvar(logvar_trials, cl_lab, cl1, cl2, nchannels)
+plt.figure(figsize=(15, 3))
+plot_std(std_trials, cl_lab, cl1, cl2, nchannels)
+plt.figure(figsize=(15, 3))
+plot_rms(rms_trials, cl_lab, cl1, cl2, nchannels)
+plt.show()
+
+# %%
+# Scatter Plot of the features
+from processing_functions import scatter_logvar, scatter_std, scatter_rms
+
+scatter_logvar(logvar_trials, cl_lab, [0, -1])
+scatter_std(std_trials, cl_lab, [0, -1])
+scatter_rms(rms_trials, cl_lab, [0, -1])
 
 
 #%% 

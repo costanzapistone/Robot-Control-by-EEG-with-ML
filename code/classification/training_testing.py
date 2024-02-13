@@ -123,50 +123,13 @@ scatter_rms(rms_trials, cl_lab, [0, -1])
 
 #%%
 # Band-Pass Filtering
+from processing_functions import butter_bandpass
 
-def butter_bandpass(trials, lowcut, highcut, fs, order=5):
-    """
-    Design a band-pass filter using the Butterworth method.
-
-    Parameters
-    ----------
-    trials : 3d-array (channels x samples x trials)
-        The EEGsignal for one class.
-    lowcut : float
-        The lower cut-off frequency of the band-pass filter.
-    highcut : float
-        The higher cut-off frequency of the band-pass filter.
-
-    fs : float
-        The sampling frequency of the signal.
-    
-    order : int
-        The order of the filter.
-    
-    Returns
-    -------
-    trials_filt : 3d-array (channels x samples x trials)
-        The band-pass filtered signal for one class.
-    """
-    from scipy.signal import butter, lfilter
-
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    ntrials = trials.shape[2]
-    trials_filt = np.zeros((nchannels, nsamples, ntrials))
-    for i in range(ntrials):
-        trials_filt[:,:,i] = lfilter(b, a, trials[:,:,i], axis=1)
-
-    return trials_filt
-
-# Band-pass filter the data
 lowcut = 8
 highcut = 30
 
-trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq),
-                    cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq)}
+trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq, nsamples),
+                    cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
 
 # %%
 # Common Spatial Patterns (CSP) butterworth 
@@ -248,11 +211,11 @@ test[cl1] = apply_mix(W, test[cl1])
 test[cl2] = apply_mix(W, test[cl2])
 
 # Select only the first and last components for classification
-comp = np.array([0,-1])
-train[cl1] = train[cl1][comp,:,:]
-train[cl2] = train[cl2][comp,:,:]
-test[cl1] = test[cl1][comp,:,:]
-test[cl2] = test[cl2][comp,:,:]
+# comp = np.array([0,-1])
+# train[cl1] = train[cl1][comp,:,:]
+# train[cl2] = train[cl2][comp,:,:]
+# test[cl1] = test[cl1][comp,:,:]
+# test[cl2] = test[cl2][comp,:,:]
 
 # Calculate the log-var
 train[cl1] = logvar(train[cl1])
@@ -284,7 +247,7 @@ from numpy import std
 # Create a dictionary to store the classifiers
 classifiers = {'LDA': LinearDiscriminantAnalysis(),
                'NB': GaussianNB(),
-               'SVM': make_pipeline(StandardScaler(), SVC(gamma='auto')),
+               'SVM': make_pipeline(StandardScaler(), SVC(gamma='auto', probability=True)),
                'RF': RandomForestClassifier(n_estimators=100),
                'DT': DecisionTreeClassifier(),
                'LR': LogisticRegression()
@@ -295,13 +258,21 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 # Train and test the classifiers with cross-validation
 
+import matplotlib.pyplot as plt
+
+# List to store accuracy scores for each classifier
+accuracy_scores = []
+
+# Train and test the classifiers with cross-validation
 for classifier in classifiers:
     # Train the classifier
     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
     scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
+    
+    # Append the scores to the list
+    accuracy_scores.append(scores)
 
     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
-
 
     
 # %%
@@ -317,7 +288,7 @@ colors = plt.get_cmap("Dark2")
 
 ax_calibration_curve = fig.add_subplot(gs[:2, :2])
 calibration_displays = {}
-markers = ["^", "v", "s", "o"]
+markers = ["^", "v", "s", "o", "X", "P"]
 for i, (name, clf) in enumerate(classifiers.items()):
     clf.fit(X_train, y_train)
     display = CalibrationDisplay.from_estimator(
@@ -333,15 +304,26 @@ for i, (name, clf) in enumerate(classifiers.items()):
     calibration_displays[name] = display
 
 ax_calibration_curve.grid()
-ax_calibration_curve.set_title("Calibration plots")
+ax_calibration_curve.set_title("Calibration plots - Before Calibration")
 
-# Add histogram of predicted probabilities for each of the 6 classifier 
-grid_positions = [(2, 0), (2, 1), (3, 0), (3, 1)]
 
-clf_list = list(classifiers.items())
-for i, (_, name) in enumerate(clf_list):
-    row, col = grid_positions[i]
-    ax = fig.add_subplot(gs[row, col])
+
+#%%
+# Add histograms for all classifiers
+num_classifiers = len(classifiers)
+num_rows = (num_classifiers + 1) // 2  # Calculate number of rows needed
+num_cols = 2  # Fixed number of columns
+
+fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, num_rows * 5))
+
+# Flatten the axes if needed
+if num_classifiers > 1:
+    axes = axes.flatten()
+else:
+    axes = [axes]
+
+for i, (name, clf) in enumerate(classifiers.items()):
+    ax = axes[i]
 
     ax.hist(
         calibration_displays[name].y_prob,
@@ -352,7 +334,199 @@ for i, (_, name) in enumerate(clf_list):
     )
     ax.set(title=name, xlabel="Mean predicted probability", ylabel="Count")
 
+# Hide any unused subplots
+for j in range(num_classifiers, num_rows * num_cols):
+    axes[j].axis('off')
+
 plt.tight_layout()
 plt.show()
+
+
+#%%
+
+# Classifiers Calibration
+from sklearn.calibration import CalibratedClassifierCV
+
+# Train the classifiers with calibration
+calibrated_models = {}
+for classifier in classifiers:
+    # Use CalibratedClassifierCV for calibration
+    calibrated_model = CalibratedClassifierCV(classifiers[classifier], method='sigmoid', cv='prefit')
+    calibrated_model.fit(X_train, y_train)
+    calibrated_models[classifier] = calibrated_model
+
+#%%
+# Plot the calibration curves
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
+
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o", "X", "P"]
+
+for i, (name, clf) in enumerate(calibrated_models.items()):
+    display = CalibrationDisplay.from_estimator(
+        clf,
+        X_test,
+        y_test,
+        n_bins=10,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display
+
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title(f"Calibration Plots - After Calibration with Platt Scaling Method")
+
 plt.show()
+#%% Add histogram of predicted probabilities for each of the 6 classifier 
+# Add histograms for all classifiers
+num_classifiers = len(classifiers)
+num_rows = (num_classifiers + 1) // 2  # Calculate number of rows needed
+num_cols = 2  # Fixed number of columns
+
+fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, num_rows * 5))
+
+# Flatten the axes if needed
+if num_classifiers > 1:
+    axes = axes.flatten()
+else:
+    axes = [axes]
+
+for i, (name, clf) in enumerate(calibrated_models.items()):
+    ax = axes[i]
+
+    ax.hist(
+        calibration_displays[name].y_prob,
+        range=(0, 1),
+        bins=10,
+        label=name,
+        color=colors(i),
+    )
+    ax.set(title=name, xlabel="Mean predicted probability", ylabel="Count")
+
+# Hide any unused subplots
+for j in range(num_classifiers, num_rows * num_cols):
+    axes[j].axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# %%
+from sklearn.metrics import mean_squared_error
+
+# Calculate squared error for each classifier without calibration
+squared_errors_no_calibration = {}
+for name, clf in classifiers.items():
+    y_pred_no_calibration = clf.predict(X_test)
+    squared_errors_no_calibration[name] = mean_squared_error(y_test, y_pred_no_calibration)
+
+# Calculate squared error for each classifier with calibration
+squared_errors_with_calibration = {}
+for name, clf in calibrated_models.items():
+    y_pred_with_calibration = clf.predict(X_test)
+    squared_errors_with_calibration[name] = mean_squared_error(y_test, y_pred_with_calibration)
+
+# Plot the squared errors for each classifier
+plt.figure(figsize=(12, 6))
+
+# Plot squared errors without calibration
+plt.bar(
+    np.arange(len(classifiers)) - 0.2,
+    squared_errors_no_calibration.values(),
+    width=0.4,
+    label='Without Calibration'
+)
+
+# Plot squared errors with calibration
+plt.bar(
+    np.arange(len(classifiers)) + 0.2,
+    squared_errors_with_calibration.values(),
+    width=0.4,
+    label='With Calibration'
+)
+
+plt.xticks(range(len(classifiers)), squared_errors_no_calibration.keys(), rotation=45)
+plt.xlabel('Classifier')
+plt.ylabel('Squared Error')
+plt.title('Squared Error for Each Classifier')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# %%
+from sklearn.metrics import mean_squared_error
+
+
+
+# Selecting the classifiers for which we want to plot squared errors
+selected_classifiers = {'SVM': calibrated_models['SVM'], 'LDA': calibrated_models['LDA'], 'LR': calibrated_models['LR']}
+
+# Calculate squared error for each selected classifier with calibration
+squared_errors_with_calibration = {}
+for name, clf in selected_classifiers.items():
+    y_pred_with_calibration = clf.predict(X_test)
+    squared_errors_with_calibration[name] = mean_squared_error(y_test, y_pred_with_calibration)
+
+# Plot the squared errors for each selected classifier
+plt.figure(figsize=(8, 6))
+
+# Plot squared errors with calibration
+plt.bar(
+    np.arange(len(selected_classifiers)),
+    squared_errors_with_calibration.values(),
+    width=0.4,
+    color='skyblue',
+)
+
+plt.xticks(range(len(selected_classifiers)), selected_classifiers.keys(), rotation=45)
+plt.xlabel('Classifier')
+plt.ylabel('Squared Error')
+plt.title('Squared Error for Calibrated Classifiers (SVM, LDA, LR)')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# %%
+# Calculate the mean of squared error
+
+from sklearn.metrics import mean_squared_error
+
+# Selecting the classifiers for which we want to calculate MSE
+selected_classifiers = {'SVM': calibrated_models['SVM'], 'LDA': calibrated_models['LDA'], 'LR': calibrated_models['LR']}
+
+# Calculate MSE for each selected classifier
+mse_values = {}
+for name, clf in selected_classifiers.items():
+    y_pred = clf.predict(X_test)
+    mse_values[name] = mean_squared_error(y_test, y_pred)
+
+# Plot the MSE values for each selected classifier
+plt.figure(figsize=(8, 6))
+
+# Plot MSE values
+plt.bar(
+    np.arange(len(selected_classifiers)),
+    mse_values.values(),
+    width=0.4,
+    color='skyblue',
+)
+
+plt.xticks(range(len(selected_classifiers)), selected_classifiers.keys(), rotation=45)
+plt.xlabel('Classifier')
+plt.ylabel('Mean Squared Error (MSE)')
+plt.title('Mean Squared Error (MSE) for Selected Classifiers (SVM, LDA, LR)')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
+# %%
+################################### Quantitative Metrics - Uncertainty ###################################
+
+
 # %%

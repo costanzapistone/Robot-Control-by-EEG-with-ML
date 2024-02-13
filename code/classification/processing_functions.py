@@ -69,10 +69,51 @@ def plot_PSD(psd_all, freqs, chan_names, cl):
         # Add labels and grid
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Power Spectral Density (dB)')
-        plt.xlim(0,30)
-        plt.ylim(0, 350)
+        plt.title('PSD for channel {}'.format(chan_names[ch_ind]))
+        plt.xlim(0,40)
+        plt.ylim(0, 300)
         plt.legend()
         plt.grid(True)
+
+def butter_bandpass(trials, lowcut, highcut, fs, nsamples, order=5):
+    """
+    Design a band-pass filter using the Butterworth method.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEGsignal for one class.
+    lowcut : float
+        The lower cut-off frequency of the band-pass filter.
+    highcut : float
+        The higher cut-off frequency of the band-pass filter.
+
+    fs : float
+        The sampling frequency of the signal.
+    
+    order : int
+        The order of the filter.
+    
+    Returns
+    -------
+    trials_filt : 3d-array (channels x samples x trials)
+        The band-pass filtered signal for one class.
+    """
+    from scipy.signal import butter, lfilter
+    
+    nchannels = trials.shape[0]  # get number of channels
+
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype='band')
+    ntrials = trials.shape[2]
+    trials_filt = np.zeros((nchannels, nsamples, ntrials))
+    for i in range(ntrials):
+        trials_filt[:,:,i] = lfilter(b, a, trials[:,:,i], axis=1)
+
+    return trials_filt
+
 
 def rms(trials):
     """
