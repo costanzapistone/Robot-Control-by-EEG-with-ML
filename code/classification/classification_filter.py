@@ -79,6 +79,10 @@ for cl, code in zip(cl_lab, np.unique(event_codes)):
 print('Shape of trials[cl1]:', trials[cl1].shape)
 print('Shape of trials[cl2]:', trials[cl2].shape)
 
+
+#%%
+
+
 #%%
 # Compute the PSD
 psd_cl1, freqs = psd(trials[cl1], sfreq)
@@ -378,3 +382,5 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 
+
+# %%

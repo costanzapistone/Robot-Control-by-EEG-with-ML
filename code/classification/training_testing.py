@@ -210,7 +210,7 @@ train[cl2] = apply_mix(W, train[cl2])
 test[cl1] = apply_mix(W, test[cl1])
 test[cl2] = apply_mix(W, test[cl2])
 
-# Select only the first and last components for classification
+# # Select only the first and last components for classification
 # comp = np.array([0,-1])
 # train[cl1] = train[cl1][comp,:,:]
 # train[cl2] = train[cl2][comp,:,:]
@@ -229,6 +229,11 @@ y_train = np.zeros(X_train.shape[0], dtype=int)
 y_train[:ntrain_r] = 1
 y_test = np.zeros(X_test.shape[0], dtype=int)
 y_test[:ntest_r] = 1
+
+#%%
+
+
+
 #%%
 # Classification with different classifiers
 
@@ -246,7 +251,7 @@ from numpy import std
 
 # Create a dictionary to store the classifiers
 classifiers = {'LDA': LinearDiscriminantAnalysis(),
-               'NB': GaussianNB(),
+            #    'NB': GaussianNB(),
                'SVM': make_pipeline(StandardScaler(), SVC(gamma='auto', probability=True)),
                'RF': RandomForestClassifier(n_estimators=100),
                'DT': DecisionTreeClassifier(),
@@ -257,9 +262,81 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 # Train and test the classifiers with cross-validation
-
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import precision_score, confusion_matrix
+
+# Initialize lists to store evaluation metrics
+evaluation_metrics = []
+
+# Loop over classifiers
+for clf_name, clf in classifiers.items():
+    # Train classifier
+    clf.fit(X_train, y_train)
+    
+    # Predict on test set
+    y_pred = clf.predict(X_test)
+    
+    # Calculate evaluation metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    confusion = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = confusion.ravel()
+    specificity = tn / (tn + fp)
+    error = 1 - accuracy
+    
+    # Store evaluation metrics
+    evaluation_metrics.append({
+        'Classifier': clf_name,
+        'Accuracy': accuracy,
+        'Precision': precision,
+        'Error': error,
+        'Specificity': specificity
+    })
+
+# Print the table
+print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
+for metric in evaluation_metrics:
+    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
+
+#%%
+import matplotlib.pyplot as plt
+
+# Extract classifier names and evaluation metrics
+classifier_names = [metric['Classifier'] for metric in evaluation_metrics]
+accuracy_scores = [metric['Accuracy'] for metric in evaluation_metrics]
+precision_scores = [metric['Precision'] for metric in evaluation_metrics]
+error_scores = [metric['Error'] for metric in evaluation_metrics]
+specificity_scores = [metric['Specificity'] for metric in evaluation_metrics]
+
+# Set up the figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Plot each metric as a bar plot
+bar_width = 0.2
+index = np.arange(len(classifier_names))
+rects1 = ax.bar(index - 2*bar_width, accuracy_scores, bar_width, label='Accuracy')
+rects2 = ax.bar(index - bar_width, precision_scores, bar_width, label='Precision')
+rects3 = ax.bar(index, error_scores, bar_width, label='Error')
+rects4 = ax.bar(index + bar_width, specificity_scores, bar_width, label='Specificity')
+
+# Add labels, title, and legend
+ax.set_xlabel('Classifier')
+ax.set_ylabel('Scores')
+ax.set_title('Evaluation Metrics based on the Classifier')
+ax.set_xticks(index)
+ax.set_xticklabels(classifier_names, rotation=45, ha='right')
+ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+# Show plot
+plt.tight_layout()
+plt.show()
+
+
+#%%
+
+
+#%%
 # List to store accuracy scores for each classifier
 accuracy_scores = []
 
@@ -274,7 +351,92 @@ for classifier in classifiers:
 
     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
 
+#%%
+import numpy as np
+from numpy import mean, std
+from sklearn.metrics import roc_auc_score, confusion_matrix, precision_score
+
+# Initialize dictionaries to store evaluation metrics
+auc_scores = {}
+error_scores = {}
+specificity_scores = {}
+precision_scores = {}
+
+# Train and test the classifiers with cross-validation
+for classifier_name, classifier in classifiers.items():
+    # Train the classifier
+    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
+    accuracy_scores = cross_val_score(classifier, X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
     
+    # Calculate other evaluation metrics
+    auc_scores[classifier_name] = cross_val_score(classifier, X_train, y_train, scoring='roc_auc', cv=cv, n_jobs=-1)
+    
+    error_scores[classifier_name] = 1 - accuracy_scores
+    
+    specificity = []
+    precision = []
+    for train_index, test_index in cv.split(X_train, y_train):
+        X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
+        y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
+        
+        classifier.fit(X_train_cv, y_train_cv)
+        y_pred_cv = classifier.predict(X_test_cv)
+        tn, fp, fn, tp = confusion_matrix(y_test_cv, y_pred_cv).ravel()
+        specificity.append(tn / (tn + fp))
+        precision.append(precision_score(y_test_cv, y_pred_cv))
+        
+    specificity_scores[classifier_name] = specificity
+    precision_scores[classifier_name] = precision
+
+    # Print evaluation metrics
+    print(f'{classifier_name} Accuracy: %.3f (%.3f)' % (mean(accuracy_scores), std(accuracy_scores)))
+    print(f'{classifier_name} AUC: %.3f (%.3f)' % (mean(auc_scores[classifier_name]), std(auc_scores[classifier_name])))
+    print(f'{classifier_name} Error: %.3f (%.3f)' % (mean(error_scores[classifier_name]), std(error_scores[classifier_name])))
+    print(f'{classifier_name} Specificity: %.3f (%.3f)' % (mean(specificity_scores[classifier_name]), std(specificity_scores[classifier_name])))
+    print(f'{classifier_name} Precision: %.3f (%.3f)' % (mean(precision_scores[classifier_name]), std(precision_scores[classifier_name])))
+
+#%%
+    
+#%%
+import matplotlib.pyplot as plt
+
+# Extract classifier names
+classifier_names = list(classifiers.keys())
+
+# Initialize the figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.axis('tight')
+ax.axis('off')
+
+# Define the table data
+table_data = []
+for clf_name in classifier_names:
+    table_data.append([clf_name,
+                       round(np.mean(accuracy_scores[classifier_names.index(clf_name)]), 4),
+                       round(np.mean(auc_scores[clf_name]), 4),
+                       round(np.mean(error_scores[clf_name]), 4),
+                       round(np.mean(specificity_scores[clf_name]), 4),
+                       round(np.mean(precision_scores[clf_name]), 4)])
+
+# Define the column headers
+column_headers = ['Classifier', 'Accuracy', 'AUC', 'Error', 'Specificity', 'Precision']
+
+# Create the table
+table = ax.table(cellText=table_data, colLabels=column_headers, loc='center', cellLoc='center', colLoc='center')
+
+# Set the font size
+table.auto_set_font_size(False)
+table.set_fontsize(10)
+
+# Adjust the cell heights
+table.auto_set_column_width([0, 1, 2, 3, 4, 5])
+
+# Show the table
+plt.show()
+
+#%%
+    
+
 # %%
 # Calibration Plots
 
@@ -304,7 +466,7 @@ for i, (name, clf) in enumerate(classifiers.items()):
     calibration_displays[name] = display
 
 ax_calibration_curve.grid()
-ax_calibration_curve.set_title("Calibration plots - Before Calibration")
+ax_calibration_curve.set_title("Calibration Plots")
 
 
 
