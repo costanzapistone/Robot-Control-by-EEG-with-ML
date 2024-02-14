@@ -203,26 +203,43 @@ test = {cl1: trials_filt[cl1][:,:,ntrain_r:],
 
 # Train the CSP on the training set only
 W = csp(train[cl1], train[cl2])
-
+print('W shape:', W.shape)
+#%%
 # Apply the CSP on both the training and test set
 train[cl1] = apply_mix(W, train[cl1])
 train[cl2] = apply_mix(W, train[cl2])
 test[cl1] = apply_mix(W, test[cl1])
 test[cl2] = apply_mix(W, test[cl2])
 
-# # Select only the first and last components for classification
-# comp = np.array([0,-1])
-# train[cl1] = train[cl1][comp,:,:]
-# train[cl2] = train[cl2][comp,:,:]
-# test[cl1] = test[cl1][comp,:,:]
-# test[cl2] = test[cl2][comp,:,:]
+print('Train[cl1] shape:', train[cl1].shape)
+print('Train[cl2] shape:', train[cl2].shape)
+print('Test[cl1] shape:', test[cl1].shape)
+print('Test[cl2] shape:', test[cl2].shape)
 
+#%%
+# Select only the first and last components for classification
+comp = np.array([0,-1])
+train[cl1] = train[cl1][comp,:,:]
+train[cl2] = train[cl2][comp,:,:]
+test[cl1] = test[cl1][comp,:,:]
+test[cl2] = test[cl2][comp,:,:]
+
+print('Train[cl1] shape:', train[cl1].shape)
+print('Train[cl2] shape:', train[cl2].shape)
+print('Test[cl1] shape:', test[cl1].shape)
+print('Test[cl2] shape:', test[cl2].shape)
+
+#%%
 # Calculate the log-var
 train[cl1] = logvar(train[cl1])
 train[cl2] = logvar(train[cl2])
 test[cl1] = logvar(test[cl1])
 test[cl2] = logvar(test[cl2])
-
+print('Train[cl1] shape:', train[cl1].shape)
+print('Train[cl2] shape:', train[cl2].shape)
+print('Test[cl1] shape:', test[cl1].shape)
+print('Test[cl2] shape:', test[cl2].shape)
+#%%
 X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
 X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
 y_train = np.zeros(X_train.shape[0], dtype=int)
@@ -230,10 +247,10 @@ y_train[:ntrain_r] = 1
 y_test = np.zeros(X_test.shape[0], dtype=int)
 y_test[:ntest_r] = 1
 
-#%%
-
-
-
+print('X_train shape:', X_train.shape)
+print('X_test shape:', X_test.shape)
+print('y_train shape:', y_train.shape)
+print('y_test shape:', y_test.shape)
 #%%
 # Classification with different classifiers
 
@@ -266,90 +283,86 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import precision_score, confusion_matrix
 
-# Initialize lists to store evaluation metrics
-evaluation_metrics = []
+# # Initialize lists to store evaluation metrics
+# evaluation_metrics = []
 
-# Loop over classifiers
-for clf_name, clf in classifiers.items():
-    # Train classifier
-    clf.fit(X_train, y_train)
+# # Loop over classifiers
+# for clf_name, clf in classifiers.items():
+#     # Train classifier
+#     clf.fit(X_train, y_train)
     
-    # Predict on test set
-    y_pred = clf.predict(X_test)
+#     # Predict on test set
+#     y_pred = clf.predict(X_test)
     
-    # Calculate evaluation metrics
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    confusion = confusion_matrix(y_test, y_pred)
-    tn, fp, fn, tp = confusion.ravel()
-    specificity = tn / (tn + fp)
-    error = 1 - accuracy
+#     # Calculate evaluation metrics
+#     accuracy = accuracy_score(y_test, y_pred)
+#     precision = precision_score(y_test, y_pred)
+#     confusion = confusion_matrix(y_test, y_pred)
+#     tn, fp, fn, tp = confusion.ravel()
+#     specificity = tn / (tn + fp)
+#     error = 1 - accuracy
     
-    # Store evaluation metrics
-    evaluation_metrics.append({
-        'Classifier': clf_name,
-        'Accuracy': accuracy,
-        'Precision': precision,
-        'Error': error,
-        'Specificity': specificity
-    })
+#     # Store evaluation metrics
+#     evaluation_metrics.append({
+#         'Classifier': clf_name,
+#         'Accuracy': accuracy,
+#         'Precision': precision,
+#         'Error': error,
+#         'Specificity': specificity
+#     })
 
-# Print the table
-print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
-for metric in evaluation_metrics:
-    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
+# # Print the table
+# print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
+# for metric in evaluation_metrics:
+#     print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
 
 #%%
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-# Extract classifier names and evaluation metrics
-classifier_names = [metric['Classifier'] for metric in evaluation_metrics]
-accuracy_scores = [metric['Accuracy'] for metric in evaluation_metrics]
-precision_scores = [metric['Precision'] for metric in evaluation_metrics]
-error_scores = [metric['Error'] for metric in evaluation_metrics]
-specificity_scores = [metric['Specificity'] for metric in evaluation_metrics]
+# # Extract classifier names and evaluation metrics
+# classifier_names = [metric['Classifier'] for metric in evaluation_metrics]
+# accuracy_scores = [metric['Accuracy'] for metric in evaluation_metrics]
+# precision_scores = [metric['Precision'] for metric in evaluation_metrics]
+# error_scores = [metric['Error'] for metric in evaluation_metrics]
+# specificity_scores = [metric['Specificity'] for metric in evaluation_metrics]
 
-# Set up the figure and axis
-fig, ax = plt.subplots(figsize=(10, 6))
+# # Set up the figure and axis
+# fig, ax = plt.subplots(figsize=(10, 6))
 
-# Plot each metric as a bar plot
-bar_width = 0.2
-index = np.arange(len(classifier_names))
-rects1 = ax.bar(index - 2*bar_width, accuracy_scores, bar_width, label='Accuracy')
-rects2 = ax.bar(index - bar_width, precision_scores, bar_width, label='Precision')
-rects3 = ax.bar(index, error_scores, bar_width, label='Error')
-rects4 = ax.bar(index + bar_width, specificity_scores, bar_width, label='Specificity')
+# # Plot each metric as a bar plot
+# bar_width = 0.2
+# index = np.arange(len(classifier_names))
+# rects1 = ax.bar(index - 2*bar_width, accuracy_scores, bar_width, label='Accuracy')
+# rects2 = ax.bar(index - bar_width, precision_scores, bar_width, label='Precision')
+# rects3 = ax.bar(index, error_scores, bar_width, label='Error')
+# rects4 = ax.bar(index + bar_width, specificity_scores, bar_width, label='Specificity')
 
-# Add labels, title, and legend
-ax.set_xlabel('Classifier')
-ax.set_ylabel('Scores')
-ax.set_title('Evaluation Metrics based on the Classifier')
-ax.set_xticks(index)
-ax.set_xticklabels(classifier_names, rotation=45, ha='right')
-ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+# # Add labels, title, and legend
+# ax.set_xlabel('Classifier')
+# ax.set_ylabel('Scores')
+# ax.set_title('Evaluation Metrics based on the Classifier')
+# ax.set_xticks(index)
+# ax.set_xticklabels(classifier_names, rotation=45, ha='right')
+# ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
-# Show plot
-plt.tight_layout()
-plt.show()
-
-
-#%%
-
+# # Show plot
+# plt.tight_layout()
+# plt.show()
 
 #%%
-# List to store accuracy scores for each classifier
-accuracy_scores = []
+# # List to store accuracy scores for each classifier
+# accuracy_scores = []
 
-# Train and test the classifiers with cross-validation
-for classifier in classifiers:
-    # Train the classifier
-    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-    scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
+# # Train and test the classifiers with cross-validation
+# for classifier in classifiers:
+#     # Train the classifier
+#     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+#     scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
     
-    # Append the scores to the list
-    accuracy_scores.append(scores)
+#     # Append the scores to the list
+#     accuracy_scores.append(scores)
 
-    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
+#     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
 
 #%%
 import numpy as np
@@ -394,51 +407,51 @@ for classifier_name, classifier in classifiers.items():
     print(f'{classifier_name} Error: %.3f (%.3f)' % (mean(error_scores[classifier_name]), std(error_scores[classifier_name])))
     print(f'{classifier_name} Specificity: %.3f (%.3f)' % (mean(specificity_scores[classifier_name]), std(specificity_scores[classifier_name])))
     print(f'{classifier_name} Precision: %.3f (%.3f)' % (mean(precision_scores[classifier_name]), std(precision_scores[classifier_name])))
-
-#%%
     
 #%%
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-# Extract classifier names
-classifier_names = list(classifiers.keys())
+# # Extract classifier names
+# classifier_names = list(classifiers.keys())
 
-# Initialize the figure and axis
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.axis('tight')
-ax.axis('off')
+# # Initialize the figure and axis
+# fig, ax = plt.subplots(figsize=(10, 6))
+# ax.axis('tight')
+# ax.axis('off')
 
-# Define the table data
-table_data = []
-for clf_name in classifier_names:
-    table_data.append([clf_name,
-                       round(np.mean(accuracy_scores[classifier_names.index(clf_name)]), 4),
-                       round(np.mean(auc_scores[clf_name]), 4),
-                       round(np.mean(error_scores[clf_name]), 4),
-                       round(np.mean(specificity_scores[clf_name]), 4),
-                       round(np.mean(precision_scores[clf_name]), 4)])
+# # Define the table data
+# table_data = []
+# for clf_name in classifier_names:
+#     table_data.append([clf_name,
+#                        round(np.mean(accuracy_scores[classifier_names.index(clf_name)]), 4),
+#                        round(np.mean(auc_scores[clf_name]), 4),
+#                        round(np.mean(error_scores[clf_name]), 4),
+#                        round(np.mean(specificity_scores[clf_name]), 4),
+#                        round(np.mean(precision_scores[clf_name]), 4)])
 
-# Define the column headers
-column_headers = ['Classifier', 'Accuracy', 'AUC', 'Error', 'Specificity', 'Precision']
+# # Define the column headers
+# column_headers = ['Classifier', 'Accuracy', 'AUC', 'Error', 'Specificity', 'Precision']
 
-# Create the table
-table = ax.table(cellText=table_data, colLabels=column_headers, loc='center', cellLoc='center', colLoc='center')
+# # Create the table
+# table = ax.table(cellText=table_data, colLabels=column_headers, loc='center', cellLoc='center', colLoc='center')
 
-# Set the font size
-table.auto_set_font_size(False)
-table.set_fontsize(10)
+# # Set the font size
+# table.auto_set_font_size(False)
+# table.set_fontsize(10)
 
-# Adjust the cell heights
-table.auto_set_column_width([0, 1, 2, 3, 4, 5])
+# # Adjust the cell heights
+# table.auto_set_column_width([0, 1, 2, 3, 4, 5])
 
-# Show the table
-plt.show()
+# # Show the table
+# plt.show()
 
 #%%
     
 
 # %%
 # Calibration Plots
+# Plot only for SVM,LR,LDA
+
 
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -466,7 +479,7 @@ for i, (name, clf) in enumerate(classifiers.items()):
     calibration_displays[name] = display
 
 ax_calibration_curve.grid()
-ax_calibration_curve.set_title("Calibration Plots")
+ax_calibration_curve.set_title("Reliability Diagram")
 
 
 
@@ -541,7 +554,7 @@ for i, (name, clf) in enumerate(calibrated_models.items()):
     calibration_displays[name] = display
 
 ax_calibration_curve.grid()
-ax_calibration_curve.set_title(f"Calibration Plots - After Calibration with Platt Scaling Method")
+ax_calibration_curve.set_title(f"Reliability Diagram - After Calibration with Platt Scaling Method")
 
 plt.show()
 #%% Add histogram of predicted probabilities for each of the 6 classifier 
@@ -578,117 +591,113 @@ plt.tight_layout()
 plt.show()
 
 # %%
-from sklearn.metrics import mean_squared_error
+#%%
 
-# Calculate squared error for each classifier without calibration
-squared_errors_no_calibration = {}
-for name, clf in classifiers.items():
-    y_pred_no_calibration = clf.predict(X_test)
-    squared_errors_no_calibration[name] = mean_squared_error(y_test, y_pred_no_calibration)
+# Classifiers Calibration
+from sklearn.calibration import CalibratedClassifierCV
 
-# Calculate squared error for each classifier with calibration
-squared_errors_with_calibration = {}
-for name, clf in calibrated_models.items():
-    y_pred_with_calibration = clf.predict(X_test)
-    squared_errors_with_calibration[name] = mean_squared_error(y_test, y_pred_with_calibration)
+# Train the classifiers with calibration
+calibrated_models = {}
+for classifier in classifiers:
+    # Use CalibratedClassifierCV for calibration
+    calibrated_model = CalibratedClassifierCV(classifiers[classifier], method='isotonic', cv='prefit')
+    calibrated_model.fit(X_train, y_train)
+    calibrated_models[classifier] = calibrated_model
 
-# Plot the squared errors for each classifier
-plt.figure(figsize=(12, 6))
+#%%
+# Plot the calibration curves
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
 
-# Plot squared errors without calibration
-plt.bar(
-    np.arange(len(classifiers)) - 0.2,
-    squared_errors_no_calibration.values(),
-    width=0.4,
-    label='Without Calibration'
-)
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o", "X", "P"]
 
-# Plot squared errors with calibration
-plt.bar(
-    np.arange(len(classifiers)) + 0.2,
-    squared_errors_with_calibration.values(),
-    width=0.4,
-    label='With Calibration'
-)
+for i, (name, clf) in enumerate(calibrated_models.items()):
+    display = CalibrationDisplay.from_estimator(
+        clf,
+        X_test,
+        y_test,
+        n_bins=10,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display
 
-plt.xticks(range(len(classifiers)), squared_errors_no_calibration.keys(), rotation=45)
-plt.xlabel('Classifier')
-plt.ylabel('Squared Error')
-plt.title('Squared Error for Each Classifier')
-plt.legend()
-plt.grid(True)
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title(f"Reliability Diagram - After Calibration with Isotonic Method")
+
+plt.show()
+#%% Add histogram of predicted probabilities for each of the 6 classifier 
+# Add histograms for all classifiers
+num_classifiers = len(classifiers)
+num_rows = (num_classifiers + 1) // 2  # Calculate number of rows needed
+num_cols = 2  # Fixed number of columns
+
+fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, num_rows * 5))
+
+# Flatten the axes if needed
+if num_classifiers > 1:
+    axes = axes.flatten()
+else:
+    axes = [axes]
+
+for i, (name, clf) in enumerate(calibrated_models.items()):
+    ax = axes[i]
+
+    ax.hist(
+        calibration_displays[name].y_prob,
+        range=(0, 1),
+        bins=10,
+        label=name,
+        color=colors(i),
+    )
+    ax.set(title=name, xlabel="Mean predicted probability", ylabel="Count")
+
+# Hide any unused subplots
+for j in range(num_classifiers, num_rows * num_cols):
+    axes[j].axis('off')
+
 plt.tight_layout()
 plt.show()
 
 # %%
-from sklearn.metrics import mean_squared_error
+# compute accuracy for calibrated models
+from sklearn.metrics import accuracy_score
+# Initialize lists to store evaluation metrics
+evaluation_metrics = []
 
+# Loop over classifiers
 
-
-# Selecting the classifiers for which we want to plot squared errors
-selected_classifiers = {'SVM': calibrated_models['SVM'], 'LDA': calibrated_models['LDA'], 'LR': calibrated_models['LR']}
-
-# Calculate squared error for each selected classifier with calibration
-squared_errors_with_calibration = {}
-for name, clf in selected_classifiers.items():
-    y_pred_with_calibration = clf.predict(X_test)
-    squared_errors_with_calibration[name] = mean_squared_error(y_test, y_pred_with_calibration)
-
-# Plot the squared errors for each selected classifier
-plt.figure(figsize=(8, 6))
-
-# Plot squared errors with calibration
-plt.bar(
-    np.arange(len(selected_classifiers)),
-    squared_errors_with_calibration.values(),
-    width=0.4,
-    color='skyblue',
-)
-
-plt.xticks(range(len(selected_classifiers)), selected_classifiers.keys(), rotation=45)
-plt.xlabel('Classifier')
-plt.ylabel('Squared Error')
-plt.title('Squared Error for Calibrated Classifiers (SVM, LDA, LR)')
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-# %%
-# Calculate the mean of squared error
-
-from sklearn.metrics import mean_squared_error
-
-# Selecting the classifiers for which we want to calculate MSE
-selected_classifiers = {'SVM': calibrated_models['SVM'], 'LDA': calibrated_models['LDA'], 'LR': calibrated_models['LR']}
-
-# Calculate MSE for each selected classifier
-mse_values = {}
-for name, clf in selected_classifiers.items():
+for clf_name, clf in calibrated_models.items():
+    # Predict on test set
     y_pred = clf.predict(X_test)
-    mse_values[name] = mean_squared_error(y_test, y_pred)
+    
+    # Calculate evaluation metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    confusion = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = confusion.ravel()
+    specificity = tn / (tn + fp)
+    error = 1 - accuracy
+    
+    # Store evaluation metrics
+    evaluation_metrics.append({
+        'Classifier': clf_name,
+        'Accuracy': accuracy,
+        'Precision': precision,
+        'Error': error,
+        'Specificity': specificity
+    })
 
-# Plot the MSE values for each selected classifier
-plt.figure(figsize=(8, 6))
+# Print the table
+print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
+for metric in evaluation_metrics:
+    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
 
-# Plot MSE values
-plt.bar(
-    np.arange(len(selected_classifiers)),
-    mse_values.values(),
-    width=0.4,
-    color='skyblue',
-)
-
-plt.xticks(range(len(selected_classifiers)), selected_classifiers.keys(), rotation=45)
-plt.xlabel('Classifier')
-plt.ylabel('Mean Squared Error (MSE)')
-plt.title('Mean Squared Error (MSE) for Selected Classifiers (SVM, LDA, LR)')
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-
-# %%
-################################### Quantitative Metrics - Uncertainty ###################################
-
+    
 
 # %%
