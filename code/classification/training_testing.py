@@ -4,10 +4,13 @@ from scipy.io import loadmat
 from processing_functions import psd, plot_PSD
 
 # load the mat data
-EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1d.mat', struct_as_record = True)
+EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1e.mat', struct_as_record = True)
 
 # List all the keys in the loaded data
 keys = EEG_data.keys()
+# c,d,e: 'left' 'right'
+# a,f :foot,right
+# b,g
 
 # Print the keys variables to identify the correct key for EEG data
 print(keys)
@@ -218,11 +221,11 @@ print('Test[cl2] shape:', test[cl2].shape)
 
 #%%
 # Select only the first and last components for classification
-comp = np.array([0,-1])
-train[cl1] = train[cl1][comp,:,:]
-train[cl2] = train[cl2][comp,:,:]
-test[cl1] = test[cl1][comp,:,:]
-test[cl2] = test[cl2][comp,:,:]
+# comp = np.array([0,-1])
+# train[cl1] = train[cl1][comp,:,:]
+# train[cl2] = train[cl2][comp,:,:]
+# test[cl1] = test[cl1][comp,:,:]
+# test[cl2] = test[cl2][comp,:,:]
 
 print('Train[cl1] shape:', train[cl1].shape)
 print('Train[cl2] shape:', train[cl2].shape)
@@ -350,20 +353,19 @@ from sklearn.metrics import precision_score, confusion_matrix
 # plt.show()
 
 #%%
-# # List to store accuracy scores for each classifier
-# accuracy_scores = []
+# List to store accuracy scores for each classifier
+accuracy_scores = []
 
-# # Train and test the classifiers with cross-validation
-# for classifier in classifiers:
-#     # Train the classifier
-#     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-#     scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
+# Train and test the classifiers with cross-validation
+for classifier in classifiers:
+    # Train the classifier
+    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+    scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
     
-#     # Append the scores to the list
-#     accuracy_scores.append(scores)
+    # Append the scores to the list
+    accuracy_scores.append(scores)
 
-#     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
-
+    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
 #%%
 import numpy as np
 from numpy import mean, std
@@ -665,38 +667,71 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# compute accuracy for calibrated models
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import KFold
+
+# Define number of folds for cross-validation
+num_folds = 5  # Adjust this according to your previous cross-validation setup
+
 # Initialize lists to store evaluation metrics
 evaluation_metrics = []
 
-# Loop over classifiers
+# Initialize KFold cross-validation
+kf = KFold(n_splits=num_folds)
 
+# Loop over classifiers
 for clf_name, clf in calibrated_models.items():
-    # Predict on test set
-    y_pred = clf.predict(X_test)
+    # Initialize lists to store evaluation metrics for each fold
+    fold_accuracies = []
+    fold_errors = []
+    fold_specificities = []
     
-    # Calculate evaluation metrics
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    confusion = confusion_matrix(y_test, y_pred)
-    tn, fp, fn, tp = confusion.ravel()
-    specificity = tn / (tn + fp)
-    error = 1 - accuracy
+    # Loop over cross-validation folds
+    for train_index, test_index in kf.split(X_test):
+        # Predict on test set for this fold
+        y_pred = clf.predict(X_test[test_index])
+        
+        # Calculate evaluation metrics for this fold
+        accuracy = accuracy_score(y_test[test_index], y_pred)
+        confusion = confusion_matrix(y_test[test_index], y_pred)
+        
+        # Check if confusion matrix has the correct shape
+        if confusion.shape == (2, 2):
+            tn, fp, fn, tp = confusion.ravel()
+            specificity = tn / (tn + fp)
+            error = 1 - accuracy
+            fold_specificities.append(specificity)
+        else:
+            # Skip this fold if confusion matrix shape is incorrect
+            continue
+        
+        # Store evaluation metrics for this fold
+        fold_accuracies.append(accuracy)
+        fold_errors.append(error)
+    
+    # Calculate average evaluation metrics across all valid folds
+    if fold_accuracies:
+        average_accuracy = sum(fold_accuracies) / len(fold_accuracies)
+        average_error = sum(fold_errors) / len(fold_errors)
+        average_specificity = sum(fold_specificities) / len(fold_specificities)
+    else:
+        # If no valid folds, set metrics to None
+        average_accuracy = None
+        average_error = None
+        average_specificity = None
     
     # Store evaluation metrics
     evaluation_metrics.append({
         'Classifier': clf_name,
-        'Accuracy': accuracy,
-        'Precision': precision,
-        'Error': error,
-        'Specificity': specificity
+        'Accuracy': average_accuracy,
+        'Error': average_error,
+        'Specificity': average_specificity
     })
 
 # Print the table
-print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
+print("Classifier\tAccuracy\tError\tSpecificity")
 for metric in evaluation_metrics:
-    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
+    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
 
     
 
