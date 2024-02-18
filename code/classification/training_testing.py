@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from processing_functions import psd, plot_PSD
 
 # load the mat data
-EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1e.mat', struct_as_record = True)
+EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1d.mat', struct_as_record = True)
 
 # List all the keys in the loaded data
 keys = EEG_data.keys()
@@ -104,16 +104,16 @@ import matplotlib.pyplot as plt
 
 # Compute the features
 logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
-std_trials = {cl1: std(trials[cl1]), cl2: std(trials[cl2])}
-rms_trials = {cl1: rms(trials[cl1]), cl2: rms(trials[cl2])}
+# std_trials = {cl1: std(trials[cl1]), cl2: std(trials[cl2])}
+# rms_trials = {cl1: rms(trials[cl1]), cl2: rms(trials[cl2])}
 
 # Bar Plots
 plt.figure(figsize=(15, 3))
 plot_logvar(logvar_trials, cl_lab, cl1, cl2, nchannels)
 plt.figure(figsize=(15, 3))
-plot_std(std_trials, cl_lab, cl1, cl2, nchannels)
-plt.figure(figsize=(15, 3))
-plot_rms(rms_trials, cl_lab, cl1, cl2, nchannels)
+# plot_std(std_trials, cl_lab, cl1, cl2, nchannels)
+# plt.figure(figsize=(15, 3))
+# plot_rms(rms_trials, cl_lab, cl1, cl2, nchannels)
 plt.show()
 
 # %%
@@ -121,8 +121,8 @@ plt.show()
 from processing_functions import scatter_logvar, scatter_std, scatter_rms
 
 scatter_logvar(logvar_trials, cl_lab, [0, -1])
-scatter_std(std_trials, cl_lab, [0, -1])
-scatter_rms(rms_trials, cl_lab, [0, -1])
+# scatter_std(std_trials, cl_lab, [0, -1])
+# scatter_rms(rms_trials, cl_lab, [0, -1])
 
 #%%
 # Band-Pass Filtering
@@ -221,11 +221,11 @@ print('Test[cl2] shape:', test[cl2].shape)
 
 #%%
 # Select only the first and last components for classification
-# comp = np.array([0,-1])
-# train[cl1] = train[cl1][comp,:,:]
-# train[cl2] = train[cl2][comp,:,:]
-# test[cl1] = test[cl1][comp,:,:]
-# test[cl2] = test[cl2][comp,:,:]
+comp = np.array([0,-1])
+train[cl1] = train[cl1][comp,:,:]
+train[cl2] = train[cl2][comp,:,:]
+test[cl1] = test[cl1][comp,:,:]
+test[cl2] = test[cl2][comp,:,:]
 
 print('Train[cl1] shape:', train[cl1].shape)
 print('Train[cl2] shape:', train[cl2].shape)
@@ -245,7 +245,7 @@ print('Test[cl2] shape:', test[cl2].shape)
 #%%
 X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
 X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-y_train = np.zeros(X_train.shape[0], dtype=int)
+y_train = np.zeros(X_train.shape[0], dtype=int) # 0 for left hand
 y_train[:ntrain_r] = 1
 y_test = np.zeros(X_test.shape[0], dtype=int)
 y_test[:ntest_r] = 1
@@ -352,20 +352,20 @@ from sklearn.metrics import precision_score, confusion_matrix
 # plt.tight_layout()
 # plt.show()
 
-#%%
-# List to store accuracy scores for each classifier
-accuracy_scores = []
+# #%%
+# # List to store accuracy scores for each classifier
+# accuracy_scores = []
 
-# Train and test the classifiers with cross-validation
-for classifier in classifiers:
-    # Train the classifier
-    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-    scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
+# # Train and test the classifiers with cross-validation
+# for classifier in classifiers:
+#     # Train the classifier
+#     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+#     scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
     
-    # Append the scores to the list
-    accuracy_scores.append(scores)
+#     # Append the scores to the list
+#     accuracy_scores.append(scores)
 
-    print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
+#     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
 #%%
 import numpy as np
 from numpy import mean, std
@@ -447,13 +447,8 @@ for classifier_name, classifier in classifiers.items():
 # # Show the table
 # plt.show()
 
-#%%
-    
-
 # %%
 # Calibration Plots
-# Plot only for SVM,LR,LDA
-
 
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -483,7 +478,35 @@ for i, (name, clf) in enumerate(classifiers.items()):
 ax_calibration_curve.grid()
 ax_calibration_curve.set_title("Reliability Diagram")
 
+#%%
+########################## Reliability diagram of the TRUE NEGATIVE RATE ##########################
 
+fig = plt.figure(figsize=(10, 10))
+gs = GridSpec(4, 2)
+colors = plt.get_cmap("Dark2")
+
+ax_calibration_curve = fig.add_subplot(gs[:2, :2])
+calibration_displays = {}
+markers = ["^", "v", "s", "o", "X", "P"]
+for i, (name, clf) in enumerate(classifiers.items()):
+    clf.fit(X_train, y_train)
+    display_0 = CalibrationDisplay.from_estimator(
+        clf,
+        X_test,
+        y_test,
+        n_bins=10,
+        pos_label=0,
+        name=name,
+        ax=ax_calibration_curve,
+        color=colors(i),
+        marker=markers[i],
+    )
+    calibration_displays[name] = display_0
+
+ax_calibration_curve.grid()
+ax_calibration_curve.set_title("Reliability Diagram")
+ax_calibration_curve.set_xlabel("Mean Predicted Probability")
+ax_calibration_curve.set_ylabel("True Negative Rate")
 
 #%%
 # Add histograms for all classifiers
