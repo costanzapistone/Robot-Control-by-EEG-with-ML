@@ -222,6 +222,10 @@ filename = os.path.join(save_dir_csp_mat, f"CSP_matrix_W.pkl")
 with open(filename, 'wb') as file:
     pickle.dump(W, file)
 
+print('Train[cl1] shape:', train[cl1].shape)
+print('Train[cl2] shape:', train[cl2].shape)
+print('Test[cl1] shape:', test[cl1].shape)
+print('Test[cl2] shape:', test[cl2].shape)
 
 #%%
 # Apply the CSP on both the training and test set
@@ -292,6 +296,11 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import RepeatedStratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, confusion_matrix
+# Directory to save trained models
+save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
+
+# Create the directory if it doesn't exist
+os.makedirs(save_dir, exist_ok=True)
 
 # Create a dictionary to store the classifiers
 classifiers = {'LDA': LinearDiscriminantAnalysis(),
@@ -302,38 +311,44 @@ classifiers = {'LDA': LinearDiscriminantAnalysis(),
                'LR': LogisticRegression()
             }
 
-# # Initialize lists to store evaluation metrics
-# evaluation_metrics = []
+evaluation_metrics = []
 
-# # Loop over classifiers
-# for clf_name, clf in classifiers.items():
-#     # Train classifier
-#     clf.fit(X_train, y_train)
+# Train and save classifiers
+for clf_name, clf in classifiers.items():
+    # Train classifier
+    clf.fit(X_train, y_train)
     
-#     # Predict on test set
-#     y_pred = clf.predict(X_test)
-    
-#     # Calculate evaluation metrics
-#     accuracy = accuracy_score(y_test, y_pred)
-#     precision = precision_score(y_test, y_pred)
-#     confusion = confusion_matrix(y_test, y_pred)
-#     tn, fp, fn, tp = confusion.ravel()
-#     specificity = tn / (tn + fp)
-#     error = 1 - accuracy
-    
-#     # Store evaluation metrics
-#     evaluation_metrics.append({
-#         'Classifier': clf_name,
-#         'Accuracy': accuracy,
-#         'Precision': precision,
-#         'Error': error,
-#         'Specificity': specificity
-#     })
+    # Save the trained classifier to a .pkl file
+    clf_filename = os.path.join(save_dir, f"{clf_name}_model.pkl")
+    with open(clf_filename, 'wb') as f:
+        pickle.dump(clf, f)
 
-# # Print the table
-# print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
-# for metric in evaluation_metrics:
-#     print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
+    # Predict on test set (if needed for evaluation)
+    y_pred = clf.predict(X_test)
+    
+    # Calculate evaluation metrics (if needed)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    confusion = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = confusion.ravel()
+    specificity = tn / (tn + fp)
+    error = 1 - accuracy
+    
+    # Store evaluation metrics (if needed)
+    evaluation_metrics.append({
+        'Classifier': clf_name,
+        'Accuracy': accuracy,
+        'Precision': precision,
+        'Error': error,
+        'Specificity': specificity
+    })
+
+
+# Print the table (if needed)
+print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
+for metric in evaluation_metrics:
+    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
+
 
 #%%
 # import matplotlib.pyplot as plt
@@ -396,54 +411,54 @@ classifiers = {'LDA': LinearDiscriminantAnalysis(),
 ##################################### Trained Models Saved ############################
 
 
-# Directory to save trained models
-save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
+# # Directory to save trained models
+# save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
 
-# Create the directory if it doesn't exist
-os.makedirs(save_dir, exist_ok=True)
+# # Create the directory if it doesn't exist
+# os.makedirs(save_dir, exist_ok=True)
 
-# Initialize dictionaries to store evaluation metrics
-auc_scores = {}
-error_scores = {}
-specificity_scores = {}
-precision_scores = {}
+# # Initialize dictionaries to store evaluation metrics
+# auc_scores = {}
+# error_scores = {}
+# specificity_scores = {}
+# precision_scores = {}
 
-for classifier_name, classifier in classifiers.items():
-    # Train the classifier
-    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
-    accuracy_scores = cross_val_score(classifier, X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
+# for classifier_name, classifier in classifiers.items():
+#     # Train the classifier
+#     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
+#     accuracy_scores = cross_val_score(classifier, X_test, y_test, scoring='accuracy', cv=cv, n_jobs=-1)
     
-    # Calculate other evaluation metrics
-    auc_scores[classifier_name] = cross_val_score(classifier, X_train, y_train, scoring='roc_auc', cv=cv, n_jobs=-1)
+#     # Calculate other evaluation metrics
+#     auc_scores[classifier_name] = cross_val_score(classifier, X_train, y_train, scoring='roc_auc', cv=cv, n_jobs=-1)
     
-    error_scores[classifier_name] = 1 - accuracy_scores
+#     error_scores[classifier_name] = 1 - accuracy_scores
     
-    specificity = []
-    precision = []
-    for train_index, test_index in cv.split(X_train, y_train):
-        X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
-        y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
+#     specificity = []
+#     precision = []
+#     for train_index, test_index in cv.split(X_train, y_train):
+#         X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
+#         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
         
-        classifier.fit(X_train_cv, y_train_cv)
-        y_pred_cv = classifier.predict(X_test_cv)
-        tn, fp, fn, tp = confusion_matrix(y_test_cv, y_pred_cv).ravel()
-        specificity.append(tn / (tn + fp))
-        precision.append(precision_score(y_test_cv, y_pred_cv))
+#         classifier.fit(X_train_cv, y_train_cv)
+#         y_pred_cv = classifier.predict(X_test_cv)
+#         tn, fp, fn, tp = confusion_matrix(y_test_cv, y_pred_cv).ravel()
+#         specificity.append(tn / (tn + fp))
+#         precision.append(precision_score(y_test_cv, y_pred_cv))
         
-    specificity_scores[classifier_name] = specificity
-    precision_scores[classifier_name] = precision
+#     specificity_scores[classifier_name] = specificity
+#     precision_scores[classifier_name] = precision
 
-    # Save the trained model using pickle
-    model_filename = os.path.join(save_dir, f"{classifier_name}_model.pkl")
-    with open(model_filename, 'wb') as file:
-        pickle.dump(classifier, file)
+#     # Save the trained model using pickle
+#     model_filename = os.path.join(save_dir, f"{classifier_name}_model.pkl")
+#     with open(model_filename, 'wb') as file:
+#         pickle.dump(classifier, file)
 
-    # Print evaluation metrics
-    print(f'{classifier_name} Accuracy: %.3f (%.3f)' % (mean(accuracy_scores), std(accuracy_scores)))
-    print(f'{classifier_name} AUC: %.3f (%.3f)' % (mean(auc_scores[classifier_name]), std(auc_scores[classifier_name])))
-    print(f'{classifier_name} Error: %.3f (%.3f)' % (mean(error_scores[classifier_name]), std(error_scores[classifier_name])))
-    print(f'{classifier_name} Specificity: %.3f (%.3f)' % (mean(specificity_scores[classifier_name]), std(specificity_scores[classifier_name])))
-    print(f'{classifier_name} Precision: %.3f (%.3f)' % (mean(precision_scores[classifier_name]), std(precision_scores[classifier_name])))
+#     # Print evaluation metrics
+#     print(f'{classifier_name} Accuracy: %.3f (%.3f)' % (mean(accuracy_scores), std(accuracy_scores)))
+#     print(f'{classifier_name} AUC: %.3f (%.3f)' % (mean(auc_scores[classifier_name]), std(auc_scores[classifier_name])))
+#     print(f'{classifier_name} Error: %.3f (%.3f)' % (mean(error_scores[classifier_name]), std(error_scores[classifier_name])))
+#     print(f'{classifier_name} Specificity: %.3f (%.3f)' % (mean(specificity_scores[classifier_name]), std(specificity_scores[classifier_name])))
+#     print(f'{classifier_name} Precision: %.3f (%.3f)' % (mean(precision_scores[classifier_name]), std(precision_scores[classifier_name])))
     
 #%%
 # import matplotlib.pyplot as plt
@@ -730,74 +745,5 @@ for j in range(num_classifiers, num_rows * num_cols):
 
 plt.tight_layout()
 plt.show()
-
-# %%
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.model_selection import KFold
-
-# Define number of folds for cross-validation
-num_folds = 5  # Adjust this according to your previous cross-validation setup
-
-# Initialize lists to store evaluation metrics
-evaluation_metrics = []
-
-# Initialize KFold cross-validation
-kf = KFold(n_splits=num_folds)
-
-# Loop over classifiers
-for clf_name, clf in calibrated_models.items():
-    # Initialize lists to store evaluation metrics for each fold
-    fold_accuracies = []
-    fold_errors = []
-    fold_specificities = []
-    
-    # Loop over cross-validation folds
-    for train_index, test_index in kf.split(X_test):
-        # Predict on test set for this fold
-        y_pred = clf.predict(X_test[test_index])
-        
-        # Calculate evaluation metrics for this fold
-        accuracy = accuracy_score(y_test[test_index], y_pred)
-        confusion = confusion_matrix(y_test[test_index], y_pred)
-        
-        # Check if confusion matrix has the correct shape
-        if confusion.shape == (2, 2):
-            tn, fp, fn, tp = confusion.ravel()
-            specificity = tn / (tn + fp)
-            error = 1 - accuracy
-            fold_specificities.append(specificity)
-        else:
-            # Skip this fold if confusion matrix shape is incorrect
-            continue
-        
-        # Store evaluation metrics for this fold
-        fold_accuracies.append(accuracy)
-        fold_errors.append(error)
-    
-    # Calculate average evaluation metrics across all valid folds
-    if fold_accuracies:
-        average_accuracy = sum(fold_accuracies) / len(fold_accuracies)
-        average_error = sum(fold_errors) / len(fold_errors)
-        average_specificity = sum(fold_specificities) / len(fold_specificities)
-    else:
-        # If no valid folds, set metrics to None
-        average_accuracy = None
-        average_error = None
-        average_specificity = None
-    
-    # Store evaluation metrics
-    evaluation_metrics.append({
-        'Classifier': clf_name,
-        'Accuracy': average_accuracy,
-        'Error': average_error,
-        'Specificity': average_specificity
-    })
-
-# Print the table
-print("Classifier\tAccuracy\tError\tSpecificity")
-for metric in evaluation_metrics:
-    print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
-
-    
 
 # %%
