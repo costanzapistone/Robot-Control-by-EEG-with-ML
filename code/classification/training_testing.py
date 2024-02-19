@@ -482,8 +482,11 @@ ax_calibration_curve = fig.add_subplot(gs[:2, :2])
 calibration_displays = {}
 markers = ["^", "v", "s", "o", "X", "P"]
 for i, (name, clf) in enumerate(classifiers.items()):
-    clf.fit(X_train, y_train)
-    display = CalibrationDisplay.from_estimator(
+    # clf.fit(X_train, y_train)
+    # Retrieve the trained classifier from the dictionary
+    trained_clf = classifiers[name]
+
+    display_1 = CalibrationDisplay.from_estimator(
         clf,
         X_test,
         y_test,
@@ -493,10 +496,12 @@ for i, (name, clf) in enumerate(classifiers.items()):
         color=colors(i),
         marker=markers[i],
     )
-    calibration_displays[name] = display
+    calibration_displays[name] = display_1
 
 ax_calibration_curve.grid()
 ax_calibration_curve.set_title("Reliability Diagram")
+ax_calibration_curve.set_xlabel("Mean Predicted Probability")
+ax_calibration_curve.set_ylabel("True Positive Rate - Class 1 (Right Hand)") # Fraction of positives
 
 #%%
 ########################## Reliability diagram of the TRUE NEGATIVE RATE ##########################
@@ -509,7 +514,10 @@ ax_calibration_curve = fig.add_subplot(gs[:2, :2])
 calibration_displays = {}
 markers = ["^", "v", "s", "o", "X", "P"]
 for i, (name, clf) in enumerate(classifiers.items()):
-    clf.fit(X_train, y_train)
+    # clf.fit(X_train, y_train)
+    # Retrieve the trained classifier from the dictionary
+    trained_clf = classifiers[name]
+   
     display_0 = CalibrationDisplay.from_estimator(
         clf,
         X_test,
@@ -526,7 +534,7 @@ for i, (name, clf) in enumerate(classifiers.items()):
 ax_calibration_curve.grid()
 ax_calibration_curve.set_title("Reliability Diagram")
 ax_calibration_curve.set_xlabel("Mean Predicted Probability")
-ax_calibration_curve.set_ylabel("True Negative Rate")
+ax_calibration_curve.set_ylabel("True Negative Rate - Class 0 (Left Hand)") # Fraction of negatives
 
 #%%
 # Add histograms for all classifiers
