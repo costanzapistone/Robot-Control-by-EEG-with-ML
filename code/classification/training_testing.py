@@ -3,8 +3,10 @@ import numpy as np
 from scipy.io import loadmat
 from processing_functions import psd, plot_PSD
 
+SUBJECT = 'd'
+
 # load the mat data
-EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1d.mat', struct_as_record = True)
+EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
 
 # List all the keys in the loaded data
 keys = EEG_data.keys()
@@ -96,11 +98,10 @@ plot_PSD(psd_all, freqs, chan_names, cl_lab)
 from processing_functions import logvar, std, rms
 from processing_functions import plot_logvar, plot_std, plot_rms
 import matplotlib.pyplot as plt
-# Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
-# Std (Standard Deviation): Std is a measure of the amount of variation or dispersion of a set of values. It is the square root of the variance.
-# RMS (Root Mean Square): RMS is a measure of the magnitude of a set of values. It is the square root of the mean of the squares of the values.
 
-# For each channel and class, compute the logvar, std, and rms across trials
+# Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
+
+# For each channel and class compute the logvar
 
 # Compute the features
 logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
@@ -255,19 +256,27 @@ print('X_test shape:', X_test.shape)
 print('y_train shape:', y_train.shape)
 print('y_test shape:', y_test.shape)
 #%%
-# Classification with different classifiers
+##################################### Classification #################################
 
+# Import classifiers from scikit-learn
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.inspection import DecisionBoundaryDisplay
 from sklearn.naive_bayes import GaussianNB
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+# Import evaluation metrics from scikit-learn
 from numpy import mean
 from numpy import std
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+import matplotlib.pyplot as plt
+from sklearn.metrics import precision_score, confusion_matrix
 
 # Create a dictionary to store the classifiers
 classifiers = {'LDA': LinearDiscriminantAnalysis(),
@@ -277,14 +286,6 @@ classifiers = {'LDA': LinearDiscriminantAnalysis(),
                'DT': DecisionTreeClassifier(),
                'LR': LogisticRegression()
             }
-
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import RepeatedStratifiedKFold
-# Train and test the classifiers with cross-validation
-import matplotlib.pyplot as plt
-
-from sklearn.metrics import precision_score, confusion_matrix
 
 # # Initialize lists to store evaluation metrics
 # evaluation_metrics = []
@@ -367,9 +368,25 @@ from sklearn.metrics import precision_score, confusion_matrix
 
 #     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
 #%%
-import numpy as np
-from numpy import mean, std
-from sklearn.metrics import roc_auc_score, confusion_matrix, precision_score
+##################################### Cross-Validation Training #################################
+
+# Stratified: This means that each fold will contain approximately the same proportion of class labels as the original dataset. 
+# It's particularly useful for classification problems where you want to ensure that each class is represented in training and 
+# testing sets equally.
+# K-fold: The dataset is divided into k subsets, and the holdout method is repeated k times. Each time, one of the k subsets is used
+# as the test set and the other k-1 subsets are put together to form a training set.
+# Repeated: The process of cross-validation is repeated multiple times with different random splits of the data.
+# This helps to provide a more robust estimate of model performance.
+
+##################################### Trained Models Saved ############################
+import pickle
+import os
+
+# Directory to save trained models
+save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
+
+# Create the directory if it doesn't exist
+os.makedirs(save_dir, exist_ok=True)
 
 # Initialize dictionaries to store evaluation metrics
 auc_scores = {}
@@ -377,7 +394,6 @@ error_scores = {}
 specificity_scores = {}
 precision_scores = {}
 
-# Train and test the classifiers with cross-validation
 for classifier_name, classifier in classifiers.items():
     # Train the classifier
     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
@@ -402,6 +418,11 @@ for classifier_name, classifier in classifiers.items():
         
     specificity_scores[classifier_name] = specificity
     precision_scores[classifier_name] = precision
+
+    # Save the trained model using pickle
+    model_filename = os.path.join(save_dir, f"{classifier_name}_model.pkl")
+    with open(model_filename, 'wb') as file:
+        pickle.dump(classifier, file)
 
     # Print evaluation metrics
     print(f'{classifier_name} Accuracy: %.3f (%.3f)' % (mean(accuracy_scores), std(accuracy_scores)))
@@ -448,9 +469,8 @@ for classifier_name, classifier in classifiers.items():
 # plt.show()
 
 # %%
-# Calibration Plots
+############################################# Reliability Diagrams ######################################
 
-import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from sklearn.calibration import CalibrationDisplay
 
