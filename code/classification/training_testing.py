@@ -280,7 +280,7 @@ from sklearn.metrics import precision_score, confusion_matrix
 
 # Create a dictionary to store the classifiers
 classifiers = {'LDA': LinearDiscriminantAnalysis(),
-            #    'NB': GaussianNB(),
+               'NB': GaussianNB(),
                'SVM': make_pipeline(StandardScaler(), SVC(gamma='auto', probability=True)),
                'RF': RandomForestClassifier(n_estimators=100),
                'DT': DecisionTreeClassifier(),
