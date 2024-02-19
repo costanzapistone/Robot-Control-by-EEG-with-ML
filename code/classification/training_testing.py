@@ -2,6 +2,8 @@
 import numpy as np
 from scipy.io import loadmat
 from processing_functions import psd, plot_PSD
+import pickle
+import os
 
 SUBJECT = 'd'
 
@@ -208,6 +210,19 @@ test = {cl1: trials_filt[cl1][:,:,ntrain_r:],
 # Train the CSP on the training set only
 W = csp(train[cl1], train[cl2])
 print('W shape:', W.shape)
+
+# Save the CSP transformation matrix
+# Directory to save it
+save_dir_csp_mat = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
+
+# Create the directory if it doesn't exist
+os.makedirs(save_dir_csp_mat, exist_ok=True)
+
+filename = os.path.join(save_dir_csp_mat, f"CSP_matrix_W.pkl")
+with open(filename, 'wb') as file:
+    pickle.dump(W, file)
+
+
 #%%
 # Apply the CSP on both the training and test set
 train[cl1] = apply_mix(W, train[cl1])
@@ -379,8 +394,7 @@ classifiers = {'LDA': LinearDiscriminantAnalysis(),
 # This helps to provide a more robust estimate of model performance.
 
 ##################################### Trained Models Saved ############################
-import pickle
-import os
+
 
 # Directory to save trained models
 save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
