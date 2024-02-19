@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'd'
+SUBJECT = 'g'
 
 # load the mat data
 EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
