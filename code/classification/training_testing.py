@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'g'
+SUBJECT = 'd'
 
 # load the mat data
 EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
@@ -102,30 +102,20 @@ from processing_functions import plot_logvar, plot_std, plot_rms
 import matplotlib.pyplot as plt
 
 # Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
-
 # For each channel and class compute the logvar
 
 # Compute the features
 logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
-# std_trials = {cl1: std(trials[cl1]), cl2: std(trials[cl2])}
-# rms_trials = {cl1: rms(trials[cl1]), cl2: rms(trials[cl2])}
 
 # Bar Plots
 plt.figure(figsize=(15, 3))
 plot_logvar(logvar_trials, cl_lab, cl1, cl2, nchannels)
-plt.figure(figsize=(15, 3))
-# plot_std(std_trials, cl_lab, cl1, cl2, nchannels)
-# plt.figure(figsize=(15, 3))
-# plot_rms(rms_trials, cl_lab, cl1, cl2, nchannels)
 plt.show()
 
 # %%
 # Scatter Plot of the features
-from processing_functions import scatter_logvar, scatter_std, scatter_rms
-
+from processing_functions import scatter_logvar
 scatter_logvar(logvar_trials, cl_lab, [0, -1])
-# scatter_std(std_trials, cl_lab, [0, -1])
-# scatter_rms(rms_trials, cl_lab, [0, -1])
 
 #%%
 # Band-Pass Filtering
@@ -138,7 +128,6 @@ trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq, nsample
                cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
 
 # %%
-# Common Spatial Patterns (CSP) butterworth 
 
 from numpy import linalg
 
@@ -297,7 +286,7 @@ from sklearn.model_selection import RepeatedStratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, confusion_matrix
 # Directory to save trained models
-save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
+save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models"
 
 # Create the directory if it doesn't exist
 os.makedirs(save_dir, exist_ok=True)
@@ -348,154 +337,49 @@ for clf_name, clf in classifiers.items():
 print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
 for metric in evaluation_metrics:
     print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
-
-
 #%%
-# import matplotlib.pyplot as plt
 
-# # Extract classifier names and evaluation metrics
-# classifier_names = [metric['Classifier'] for metric in evaluation_metrics]
-# accuracy_scores = [metric['Accuracy'] for metric in evaluation_metrics]
-# precision_scores = [metric['Precision'] for metric in evaluation_metrics]
-# error_scores = [metric['Error'] for metric in evaluation_metrics]
-# specificity_scores = [metric['Specificity'] for metric in evaluation_metrics]
+# Bar Plot of the evaluation metrics
 
-# # Set up the figure and axis
-# fig, ax = plt.subplots(figsize=(10, 6))
+import matplotlib.pyplot as plt
+import numpy as np
 
-# # Plot each metric as a bar plot
-# bar_width = 0.2
-# index = np.arange(len(classifier_names))
-# rects1 = ax.bar(index - 2*bar_width, accuracy_scores, bar_width, label='Accuracy')
-# rects2 = ax.bar(index - bar_width, precision_scores, bar_width, label='Precision')
-# rects3 = ax.bar(index, error_scores, bar_width, label='Error')
-# rects4 = ax.bar(index + bar_width, specificity_scores, bar_width, label='Specificity')
+# Extract data for plotting
+classifiers = [metric['Classifier'] for metric in evaluation_metrics]
+accuracy = [metric['Accuracy'] for metric in evaluation_metrics]
+precision = [metric['Precision'] for metric in evaluation_metrics]
+error = [metric['Error'] for metric in evaluation_metrics]
+specificity = [metric['Specificity'] for metric in evaluation_metrics]
 
-# # Add labels, title, and legend
-# ax.set_xlabel('Classifier')
-# ax.set_ylabel('Scores')
-# ax.set_title('Evaluation Metrics based on the Classifier')
-# ax.set_xticks(index)
-# ax.set_xticklabels(classifier_names, rotation=45, ha='right')
-# ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+# Set the width of the bars
+bar_width = 0.15
 
-# # Show plot
-# plt.tight_layout()
-# plt.show()
+# Set the position of the bars on the x-axis
+r1 = np.arange(len(classifiers))
+r2 = [x + bar_width for x in r1]
+r3 = [x + bar_width for x in r2]
+r4 = [x + bar_width for x in r3]
+r5 = [x + bar_width for x in r4]
 
-# #%%
-# # List to store accuracy scores for each classifier
-# accuracy_scores = []
+# Plotting
+plt.bar(r1, accuracy, color='skyblue', width=bar_width, label='Accuracy')
+plt.bar(r2, precision, color='orange', width=bar_width, label='Precision')
+plt.bar(r3, error, color='lightgreen', width=bar_width, label='Error')
+plt.bar(r4, specificity, color='salmon', width=bar_width, label='Specificity')
 
-# # Train and test the classifiers with cross-validation
-# for classifier in classifiers:
-#     # Train the classifier
-#     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-#     scores = cross_val_score(classifiers[classifier], X_train, y_train, scoring='accuracy', cv=cv, n_jobs=-1)
-    
-#     # Append the scores to the list
-#     accuracy_scores.append(scores)
+# Adding labels
+plt.xlabel('Classifiers', fontweight='bold')
+plt.xticks([r + bar_width * 1.5 for r in range(len(classifiers))], classifiers)
+plt.title('Evaluation Metrics ')
 
-#     print(f'{classifier} Accuracy: %.3f (%.3f)' % (mean(scores), std(scores)))
-#%%
-##################################### Cross-Validation Training #################################
+# Adjust y-axis ticks to display more values between 0 and 1
+plt.yticks(np.arange(0, 1.1, 0.1))
 
-# Stratified: This means that each fold will contain approximately the same proportion of class labels as the original dataset. 
-# It's particularly useful for classification problems where you want to ensure that each class is represented in training and 
-# testing sets equally.
-# K-fold: The dataset is divided into k subsets, and the holdout method is repeated k times. Each time, one of the k subsets is used
-# as the test set and the other k-1 subsets are put together to form a training set.
-# Repeated: The process of cross-validation is repeated multiple times with different random splits of the data.
-# This helps to provide a more robust estimate of model performance.
+# Move the legend outside the plot area
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-##################################### Trained Models Saved ############################
-
-
-# # Directory to save trained models
-# save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
-
-# # Create the directory if it doesn't exist
-# os.makedirs(save_dir, exist_ok=True)
-
-# # Initialize dictionaries to store evaluation metrics
-# auc_scores = {}
-# error_scores = {}
-# specificity_scores = {}
-# precision_scores = {}
-
-# for classifier_name, classifier in classifiers.items():
-#     # Train the classifier
-#     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
-#     accuracy_scores = cross_val_score(classifier, X_test, y_test, scoring='accuracy', cv=cv, n_jobs=-1)
-    
-#     # Calculate other evaluation metrics
-#     auc_scores[classifier_name] = cross_val_score(classifier, X_train, y_train, scoring='roc_auc', cv=cv, n_jobs=-1)
-    
-#     error_scores[classifier_name] = 1 - accuracy_scores
-    
-#     specificity = []
-#     precision = []
-#     for train_index, test_index in cv.split(X_train, y_train):
-#         X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
-#         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
-        
-#         classifier.fit(X_train_cv, y_train_cv)
-#         y_pred_cv = classifier.predict(X_test_cv)
-#         tn, fp, fn, tp = confusion_matrix(y_test_cv, y_pred_cv).ravel()
-#         specificity.append(tn / (tn + fp))
-#         precision.append(precision_score(y_test_cv, y_pred_cv))
-        
-#     specificity_scores[classifier_name] = specificity
-#     precision_scores[classifier_name] = precision
-
-#     # Save the trained model using pickle
-#     model_filename = os.path.join(save_dir, f"{classifier_name}_model.pkl")
-#     with open(model_filename, 'wb') as file:
-#         pickle.dump(classifier, file)
-
-#     # Print evaluation metrics
-#     print(f'{classifier_name} Accuracy: %.3f (%.3f)' % (mean(accuracy_scores), std(accuracy_scores)))
-#     print(f'{classifier_name} AUC: %.3f (%.3f)' % (mean(auc_scores[classifier_name]), std(auc_scores[classifier_name])))
-#     print(f'{classifier_name} Error: %.3f (%.3f)' % (mean(error_scores[classifier_name]), std(error_scores[classifier_name])))
-#     print(f'{classifier_name} Specificity: %.3f (%.3f)' % (mean(specificity_scores[classifier_name]), std(specificity_scores[classifier_name])))
-#     print(f'{classifier_name} Precision: %.3f (%.3f)' % (mean(precision_scores[classifier_name]), std(precision_scores[classifier_name])))
-    
-#%%
-# import matplotlib.pyplot as plt
-
-# # Extract classifier names
-# classifier_names = list(classifiers.keys())
-
-# # Initialize the figure and axis
-# fig, ax = plt.subplots(figsize=(10, 6))
-# ax.axis('tight')
-# ax.axis('off')
-
-# # Define the table data
-# table_data = []
-# for clf_name in classifier_names:
-#     table_data.append([clf_name,
-#                        round(np.mean(accuracy_scores[classifier_names.index(clf_name)]), 4),
-#                        round(np.mean(auc_scores[clf_name]), 4),
-#                        round(np.mean(error_scores[clf_name]), 4),
-#                        round(np.mean(specificity_scores[clf_name]), 4),
-#                        round(np.mean(precision_scores[clf_name]), 4)])
-
-# # Define the column headers
-# column_headers = ['Classifier', 'Accuracy', 'AUC', 'Error', 'Specificity', 'Precision']
-
-# # Create the table
-# table = ax.table(cellText=table_data, colLabels=column_headers, loc='center', cellLoc='center', colLoc='center')
-
-# # Set the font size
-# table.auto_set_font_size(False)
-# table.set_fontsize(10)
-
-# # Adjust the cell heights
-# table.auto_set_column_width([0, 1, 2, 3, 4, 5])
-
-# # Show the table
-# plt.show()
+# Show plot
+plt.show()
 
 # %%
 ############################################# Reliability Diagrams ######################################
@@ -526,7 +410,9 @@ for i, (name, clf) in enumerate(classifiers.items()):
         marker=markers[i],
     )
     calibration_displays[name] = display_1
-
+# Draw threshold line
+threshold_value = 0.5  # Adjust as needed
+ax_calibration_curve.axvline(x=threshold_value, color='r', linestyle='--', label=f'Threshold = {threshold_value:.2f}')
 ax_calibration_curve.grid()
 ax_calibration_curve.set_title("Reliability Diagram")
 ax_calibration_curve.set_xlabel("Mean Predicted Probability")
