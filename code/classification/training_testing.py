@@ -135,7 +135,7 @@ lowcut = 8
 highcut = 30
 
 trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq, nsamples),
-                    cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
+               cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
 
 # %%
 # Common Spatial Patterns (CSP) butterworth 
@@ -195,17 +195,17 @@ def apply_mix(W, trials):
 train_percentage = 0.7
 
 # Calculate the number of trials for each class the above percentage boils down to
-ntrain_r = int(trials_filt[cl1].shape[2] * train_percentage)
-ntrain_f = int(trials_filt[cl2].shape[2] * train_percentage)
-ntest_r = trials_filt[cl1].shape[2] - ntrain_r
-ntest_f = trials_filt[cl2].shape[2] - ntrain_f
+ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
+ntrain_r = int(trials_filt[cl2].shape[2] * train_percentage)
+ntest_l = trials_filt[cl1].shape[2] - ntrain_l
+ntest_r = trials_filt[cl2].shape[2] - ntrain_r
 
 # Splitting the frequency filtered signal into a train and test set
-train = {cl1: trials_filt[cl1][:,:,:ntrain_r],
-         cl2: trials_filt[cl2][:,:,:ntrain_f]}
+train = {cl1: trials_filt[cl1][:,:,:ntrain_l],
+         cl2: trials_filt[cl2][:,:,:ntrain_r]}
 
-test = {cl1: trials_filt[cl1][:,:,ntrain_r:],
-        cl2: trials_filt[cl2][:,:,ntrain_f:]}
+test = {cl1: trials_filt[cl1][:,:,ntrain_l:],
+        cl2: trials_filt[cl2][:,:,ntrain_r:]}
 
 # Train the CSP on the training set only
 W = csp(train[cl1], train[cl2])
