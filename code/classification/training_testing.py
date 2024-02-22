@@ -97,8 +97,7 @@ plot_PSD(psd_all, freqs, chan_names, cl_lab)
     
 # %%
 # Statistical analysis
-from processing_functions import logvar, std, rms
-from processing_functions import plot_logvar, plot_std, plot_rms
+from processing_functions import logvar, plot_logvar
 import matplotlib.pyplot as plt
 
 # Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
