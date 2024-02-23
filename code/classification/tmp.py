@@ -12,7 +12,7 @@ SUBJECT = 'd'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 
 # Load the classifier
-model_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LR_model.pkl'
+model_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LDA_model.pkl'
 model_filename_all =  f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/All_Components/Trained_Models/LR_model.pkl'
 
 with open(model_filename_2, 'rb') as file:
@@ -246,5 +246,27 @@ conf_matrix_f = confusion_matrix(y_test_f, y_pred_f)
 accuracy_f = np.trace(conf_matrix_f) / np.sum(conf_matrix_f)
 print('Accuracy of the filtered dataset:', accuracy_f)
 print('Confusion matrix of the filtered dataset:', conf_matrix_f)
+
+# %%
+# To quantify the uncertainty of the model i compute the entropy of the predicted probabilities
+
+def entropy(predicted_probs):
+    """
+    Compute the entropy of predicted probabilities.
+
+    Parameters:
+    predicted_probs : array-like, shape (n_samples, n_classes)
+        The predicted probabilities for each sample and each class.
+
+    Returns:
+    float
+        The average entropy value across all samples in the input data.
+    """
+    entropy_values = -np.sum(predicted_probs * np.log(predicted_probs), axis=1)
+    return np.mean(entropy_values)
+
+# Calculate entropy for the original test set
+entropy = entropy(predicted_probs)
+print('Entropy:', entropy)
 
 # %%
