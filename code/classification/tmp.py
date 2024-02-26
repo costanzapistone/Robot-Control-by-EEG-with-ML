@@ -8,18 +8,18 @@ from processing_functions import logvar
 from numpy import linalg
 
 # Define constants
-SUBJECT = 'e'
+SUBJECT = 'g'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 
 # Load the classifier
-model_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LDA_model.pkl'
-model_filename_all =  f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/All_Components/Trained_Models/LDA_model.pkl'
+model_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/DT_model.pkl'
+# model_filename_all =  f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/All_Components/Trained_Models/LDA_model.pkl'
 
 with open(model_filename_2, 'rb') as file:
     model_2 = pickle.load(file)
 
-with open(model_filename_all, 'rb') as file:
-    model_all = pickle.load(file)
+# with open(model_filename_all, 'rb') as file:
+#     model_all = pickle.load(file)
 
 # Load the CSP transformation matrix
 W_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/CSP_matrix_W.pkl'
