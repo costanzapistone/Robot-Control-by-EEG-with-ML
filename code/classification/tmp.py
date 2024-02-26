@@ -8,12 +8,12 @@ from processing_functions import logvar
 from numpy import linalg
 
 # Define constants
-SUBJECT = 'd'
+SUBJECT = 'e'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 
 # Load the classifier
 model_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LDA_model.pkl'
-model_filename_all =  f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/All_Components/Trained_Models/LR_model.pkl'
+model_filename_all =  f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/All_Components/Trained_Models/LDA_model.pkl'
 
 with open(model_filename_2, 'rb') as file:
     model_2 = pickle.load(file)
@@ -262,7 +262,13 @@ def entropy(predicted_probs):
     float
         The average entropy value across all samples in the input data.
     """
+
+    epsilon = 1e-9
+    predicted_probs = np.clip(predicted_probs, epsilon, 1 - epsilon)
+
+    # Calculate entropy
     entropy_values = -np.sum(predicted_probs * np.log(predicted_probs), axis=1)
+
     return np.mean(entropy_values)
 
 # Calculate entropy for the original test set

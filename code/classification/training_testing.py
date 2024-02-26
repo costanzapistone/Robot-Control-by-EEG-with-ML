@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'd'
+SUBJECT = 'g'
 
 # load the mat data
 EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
@@ -13,8 +13,10 @@ EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_cal
 # List all the keys in the loaded data
 keys = EEG_data.keys()
 # c,d,e: 'left' 'right'
-# a,f :foot,right
-# b,g
+# a,f: 'foot', 'right'
+
+# a,b,f,g: real data
+# c,d,e: simulated data
 
 # Print the keys variables to identify the correct key for EEG data
 print(keys)
@@ -201,7 +203,7 @@ print('W shape:', W.shape)
 
 # Save the CSP transformation matrix
 # Directory to save it
-save_dir_csp_mat = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/Trained_Models"
+save_dir_csp_mat = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models"
 
 # Create the directory if it doesn't exist
 os.makedirs(save_dir_csp_mat, exist_ok=True)
