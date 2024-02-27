@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from processing_functions import psd, plot_PSD
 
 # load the mat data
-EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1d.mat', struct_as_record = True)
+EEG_data = loadmat('/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1c.mat', struct_as_record = True)
 
 # List all the keys in the loaded data
 keys = EEG_data.keys()
@@ -79,8 +79,6 @@ for cl, code in zip(cl_lab, np.unique(event_codes)):
 print('Shape of trials[cl1]:', trials[cl1].shape)
 print('Shape of trials[cl2]:', trials[cl2].shape)
 
-
-#%%
 
 
 #%%

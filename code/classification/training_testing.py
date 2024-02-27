@@ -182,7 +182,7 @@ def apply_mix(W, trials):
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.7
+train_percentage = 0.5
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
