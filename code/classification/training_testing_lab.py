@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'c'
+SUBJECT = 'g'
 
 # load the mat data
 EEG_data = loadmat(f'/home/platonics/Documents/costanza_workspace/src/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
@@ -24,12 +24,8 @@ markers = EEG_data['mrk']
 sfreq = EEG_data['nfo']['fs'][0][0][0][0]
 EEGdata   = EEG_data['cnt'].T 
 nchannels, nsamples = EEGdata.shape
-
 time_unit = 1 / sfreq
-print("Time Unit:", time_unit, "seconds")
-
 chan_names = [s[0] for s in EEG_data['nfo']['clab'][0][0][0]]
-
 event_onsets  = EEG_data['mrk'][0][0][0] # Time points when events occurred
 event_codes   = EEG_data['mrk'][0][0][1] # It contains numerical or categorical labels associated with each event.
 event_onset_time = event_onsets * time_unit # Seconds
@@ -37,28 +33,11 @@ event_onset_time = event_onsets * time_unit # Seconds
 # Creates an array of zeros and then assigns the event codes to the corresponding positions based on the event onsets.
 labels = np.zeros((1, nsamples), int)
 labels[0, event_onsets] = event_codes
-
 cl_lab = [s[0] for s in EEG_data['nfo']['classes'][0][0][0]]
 cl1    = cl_lab[0]
 cl2    = cl_lab[1]
-
-# Electrode positions 
-xpos = EEG_data['nfo']['xpos']
-ypos = EEG_data['nfo']['ypos']
-
 nclasses = len(cl_lab)
 nevents = len(event_onsets)
-
-# Print some information
-print('Shape of EEG:', EEGdata.shape)
-print('Sample rate:', sfreq)
-print('Number of channels:', nchannels)
-print('Channel names:', chan_names)
-print('Number of events (MI movements):', event_onsets.shape[1])
-print('Event codes:', np.unique(event_codes))
-print('Class labels:', cl_lab)
-print('Number of classes:', nclasses)
-
 # %%
 # Dictionary to store the trials
 trials = {}
@@ -82,10 +61,6 @@ for cl, code in zip(cl_lab, np.unique(event_codes)):
     for i, onset in enumerate(cl_onsets):
         trials[cl][:,:,i] = EEGdata[:, win + onset]
 
-# Some information about the dimensionality of the data (channels x time x trials)
-print('Shape of trials[cl1]:', trials[cl1].shape)
-print('Shape of trials[cl2]:', trials[cl2].shape)
-
 #%%
 # Compute the PSD
 psd_cl1, freqs = psd(trials[cl1], sfreq)
@@ -97,13 +72,8 @@ plot_PSD(psd_all, freqs, chan_names, cl_lab)
     
 # %%
 # Statistical analysis
-from processing_functions import logvar, std, rms
-from processing_functions import plot_logvar, plot_std, plot_rms
+from processing_functions import logvar, std, rms, plot_logvar, plot_std, plot_rms
 import matplotlib.pyplot as plt
-
-# Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
-
-# For each channel and class compute the logvar
 
 # Compute the features
 logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
@@ -131,11 +101,8 @@ scatter_logvar(logvar_trials, cl_lab, [0, -1])
 # Band-Pass Filtering
 from processing_functions import butter_bandpass
 
-lowcut = 8
-highcut = 30
-
-trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq, nsamples),
-                    cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
+trials_filt = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq, nsamples),
+                    cl2: butter_bandpass(trials[cl2], 8, 30, sfreq, nsamples)}
 
 # %%
 # Common Spatial Patterns (CSP) butterworth 
@@ -192,7 +159,7 @@ def apply_mix(W, trials):
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.5
+train_percentage = 0.6
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -264,12 +231,17 @@ print('Train[cl2] shape:', train[cl2].shape)
 print('Test[cl1] shape:', test[cl1].shape)
 print('Test[cl2] shape:', test[cl2].shape)
 #%%
+# X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+# X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
+# y_train = np.zeros(X_train.shape[0], dtype=int) # 1 for left hand
+# y_train[:ntrain_r] = 1
+# y_test = np.zeros(X_test.shape[0], dtype=int)
+# y_test[:ntest_r] = 1
+
 X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+y_train = np.concatenate((np.zeros(ntrain_l), np.ones(ntrain_r))) # 1 for right hand, 0 for left hand
 X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-y_train = np.zeros(X_train.shape[0], dtype=int) # 0 for left hand
-y_train[:ntrain_r] = 1
-y_test = np.zeros(X_test.shape[0], dtype=int)
-y_test[:ntest_r] = 1
+y_test = np.concatenate((np.zeros(ntest_l), np.ones(ntest_r))) # 1 for right hand, 0 for left hand
 
 print('X_train shape:', X_train.shape)
 print('X_test shape:', X_test.shape)
