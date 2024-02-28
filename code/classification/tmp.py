@@ -5,26 +5,19 @@ from sklearn.metrics import confusion_matrix
 from scipy.io import loadmat
 from processing_functions import butter_bandpass
 from processing_functions import logvar
-from numpy import linalg
-
+import matplotlib.pyplot as plt
 # Define constants
-SUBJECT = 'c'
+SUBJECT = 'g'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 
-# Load the classifier
-model_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LR_model.pkl'
-# model_filename_all =  f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/All_Components/Trained_Models/LDA_model.pkl'
+# Load the models
+model = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LR_model.pkl'
+W = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/CSP_matrix_W.pkl'
 
-with open(model_filename_2, 'rb') as file:
-    model_2 = pickle.load(file)
+with open(model, 'rb') as file:
+    model = pickle.load(file)
 
-# with open(model_filename_all, 'rb') as file:
-#     model_all = pickle.load(file)
-
-# Load the CSP transformation matrix
-W_filename_2 = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/CSP_matrix_W.pkl'
-
-with open(W_filename_2, 'rb') as file:
+with open(W, 'rb') as file:
     W = pickle.load(file)
 
 # load the mat data
@@ -36,12 +29,9 @@ markers = EEG_data['mrk']
 sfreq = EEG_data['nfo']['fs'][0][0][0][0]
 EEGdata   = EEG_data['cnt'].T 
 nchannels, nsamples = EEGdata.shape
-
 chan_names = [s[0] for s in EEG_data['nfo']['clab'][0][0][0]]
-
 event_onsets  = EEG_data['mrk'][0][0][0] # Time points when events occurred
 event_codes   = EEG_data['mrk'][0][0][1] # It contains numerical or categorical labels associated with each event.
-
 labels = np.zeros((1, nsamples), int)
 labels[0, event_onsets] = event_codes
 cl_lab = [s[0] for s in EEG_data['nfo']['classes'][0][0][0]]
@@ -49,7 +39,6 @@ cl1    = cl_lab[0]
 cl2    = cl_lab[1]
 nclasses = len(cl_lab)
 nevents = len(event_onsets)
-
 
 # Dictionary to store the trials
 trials = {}
@@ -70,50 +59,11 @@ for cl, code in zip(cl_lab, np.unique(event_codes)):
     for i, onset in enumerate(cl_onsets):
         trials[cl][:,:,i] = EEGdata[:, win + onset]
   
-# Band-Pass Filtering
+# Band-Pass Filter
 
-lowcut = 8
-highcut = 30
+trials_filt = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq, nsamples),
+               cl2: butter_bandpass(trials[cl2], 8, 30, sfreq, nsamples)}
 
-trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq, nsamples),
-               cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
-
-def cov(trials):
-    """
-    Calculates the covariance for each trial and return their average.
-
-    """
-    ntrials = trials.shape[2]
-    covs = [ trials[:,:,i].dot(trials[:,:,i].T)/ nsamples for i in range(ntrials) ]
-    return np.mean(covs, axis=0)
-
-def whitening(sigma):
-    """ calculate whitening matrix for covariance matrix sigma. """
-    U, l, _ = linalg.svd(sigma)
-    return U.dot(np.diag(l ** -0.5))
-
-def csp(trials_r, trials_l):
-    """
-    Calculates the CSP transformation matrix W.
-
-    Parameters
-    ----------
-    trials_r, trials_l : 3d-arrays (channels x samples x trials)
-        The EEGsignal for right and left hand
-
-    Returns
-    -------
-    W : mixing matrix (spatial filters that will maximize the variance for one class and minimize the variance for the other)
-        The CSP transformation matrix
-    """
-    cov_r = cov(trials_r)
-    cov_l = cov(trials_l)
-
-    P = whitening(cov_r + cov_l)
-    B, _, _ = linalg.svd(P.T.dot(cov_l).dot(P))
-    
-    W = P.dot(B)
-    return W
 
 def apply_mix(W, trials):
     """
@@ -126,7 +76,7 @@ def apply_mix(W, trials):
     return trials_csp
 
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.7
+train_percentage = 0.6
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -163,89 +113,126 @@ train[cl2] = logvar(train[cl2])
 test[cl1] = logvar(test[cl1])
 test[cl2] = logvar(test[cl2])
 
+print('train[cl1].shape :',train[cl1].shape)
+print('train[cl2].shape :',train[cl2].shape)
+print('test[cl1].shape :',test[cl1].shape)
+print('test[cl2].shape :',test[cl2].shape)
+
+
+#%%
+# 0 for right hand, 1 for left hand
+# X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+# X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
+# y_train = np.zeros(X_train.shape[0], dtype=int) 
+# y_train[:ntrain_r] = 1 
+# y_test = np.zeros(X_test.shape[0], dtype=int)
+# y_test[:ntest_r] = 1
+
+#%%
+# 1 for right hand, 0 for left hand
 
 X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+y_train = np.concatenate((np.zeros(ntrain_l), np.ones(ntrain_r)))
 X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-y_train = np.zeros(X_train.shape[0], dtype=int) # 0 for left hand
-y_train[:ntrain_r] = 1
-y_test = np.zeros(X_test.shape[0], dtype=int)
-y_test[:ntest_r] = 1
+y_test = np.concatenate((np.zeros(ntest_l), np.ones(ntest_r)))
 
-predicted_probs = model_2.predict_proba(X_test)
-#%%import numpy as np
-from sklearn.metrics import confusion_matrix
+# Compute the accuracy of the model
 
-# Define thresholds
-threshold = 0.7
-
-X_test_cl1 = test[cl1].T
-X_test_cl2 = test[cl2].T
-y_test_cl1 = np.zeros(X_test_cl1.shape[0], dtype=int)
-y_test_cl2 = np.ones(X_test_cl2.shape[0], dtype=int)
-
-predicted_probs_cl1 = model_2.predict_proba(X_test_cl1)
-predicted_probs_cl2 = model_2.predict_proba(X_test_cl2)
-
-#%%
-indices_to_keep_cl1 = []
-
-for i, prob in enumerate(predicted_probs_cl1):
-    if (prob[1] > threshold):
-        indices_to_keep_cl1.append(i)
-
-X_test_cl1_filtered = X_test_cl1[indices_to_keep_cl1,:]
-y_test_cl1_filtered = y_test_cl1[indices_to_keep_cl1]
-
-print('X_test_cl1.shape :',X_test_cl1.shape)
-print('y_test_cl1.shape :',y_test_cl1.shape)
-print('X_test_cl1_filtered.shape :',X_test_cl1_filtered.shape)
-print('y_test_cl1_filtered.shape :',y_test_cl1_filtered.shape)
-
-#%%
-indices_to_keep_cl2 = []
-
-for i, prob in enumerate(predicted_probs_cl2):
-    if (prob[0] > threshold):
-        indices_to_keep_cl2.append(i)
-
-X_test_cl2_filtered = X_test_cl2[indices_to_keep_cl2,:]
-y_test_cl2_filtered = y_test_cl2[indices_to_keep_cl2]
-
-print('X_test_cl2.shape :',X_test_cl2.shape)
-print('y_test_cl2.shape :',y_test_cl2.shape)
-print('X_test_cl2_filtered.shape :',X_test_cl2_filtered.shape)
-print('y_test_cl2_filtered.shape :',y_test_cl2_filtered.shape)
-#%%
-# Concatenate the filtered data
-# X_test_f = np.concatenate((X_test_cl1_filtered, X_test_cl2_filtered), axis=0)
-# Concatenate the filtered data
-X_test_f = np.concatenate((X_test_cl1_filtered, X_test_cl2_filtered), axis=0)
-y_test_f = np.zeros(X_test_f.shape[0], dtype=int)
-y_test_f[:len(y_test_cl1_filtered)] = 1
-# y_test_f = np.concatenate((y_test_cl1_filtered, y_test_cl2_filtered))
-
-
-print('X_test_f.shape :',X_test_f.shape)
-print('y_test_f.shape :',y_test_f.shape)
-
-# Print the original data shape
-print('X_test.shape :',X_test.shape)
-print('y_test.shape :',y_test.shape)
-
-    
-# %%
-# Evaluate the confusion matrix and accuracy for both dataset
-y_pred = model_2.predict(X_test)
+y_pred = model.predict(X_test)
 conf_matrix = confusion_matrix(y_test, y_pred)
 accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
-print('Accuracy:', accuracy)
-print('Confusion matrix:', conf_matrix)
 
-y_pred_f = model_2.predict(X_test_f)
-conf_matrix_f = confusion_matrix(y_test_f, y_pred_f)
-accuracy_f = np.trace(conf_matrix_f) / np.sum(conf_matrix_f)
-print('Accuracy of the filtered dataset:', accuracy_f)
-print('Confusion matrix of the filtered dataset:', conf_matrix_f)
+#%%
+# I want to filter the test set based on the predicted probabilities with a mask
+# I have to define a threshold to decide which samples to keep and which to discard
+predicted_probs = model.predict_proba(X_test)
+# Define thresholds
+threshold = 0.1
+mask = (predicted_probs[:, 1] > ( 0.5 + threshold)) | (predicted_probs[:, 0] > (0.5 + threshold))
+
+# Apply the mask to the test set
+X_test_f = X_test[mask, :]
+y_test_f = y_test[mask]
+
+print(X_test_f.shape)
+print(y_test_f.shape)
+
+#%%
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+# Define a range of thresholds
+threshold_range = np.linspace(0, 0.4, 50)
+
+# Initialize lists to store accuracy scores
+accuracy_scores = []
+
+# Iterate over each threshold
+for threshold in threshold_range:
+    # Create mask
+    mask = (predicted_probs[:, 1] > (0.5 + threshold)) | (predicted_probs[:, 0] > (0.5 + threshold))
+    
+    # Apply mask to test set
+    X_test_filtered = X_test[mask]
+    y_test_filtered = y_test[mask]
+    
+    y_pred = model.predict(X_test_filtered)
+    conf_matrix = confusion_matrix(y_test_filtered, y_pred)
+    accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
+
+    # Append accuracy score to list
+    accuracy_scores.append(accuracy)
+
+# Calculate accuracy without any threshold
+y_pred= model.predict(X_test)
+conf_matrix = confusion_matrix(y_test, y_pred)
+accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
+
+# Plot accuracy vs threshold
+plt.plot(threshold_range, accuracy_scores, label='With Threshold')
+plt.axhline(y=accuracy, color='r', linestyle='--', label='No Threshold')
+plt.xlabel('Threshold')
+plt.ylabel('Accuracy')
+plt.xlim(0, 0.4)
+plt.title('Accuracy vs Threshold')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#%%
+
+# Define a range of thresholds
+threshold_range = np.linspace(0, 0.4, 50)
+
+# Initialize lists to store accuracy scores and percentage reduction
+accuracy_scores = []
+percentage_reduction = []
+
+# Total number of samples in the original dataset
+total_samples = len(y_test)
+
+# Iterate over each threshold
+for threshold in threshold_range:
+    # Create mask
+    mask = (predicted_probs[:, 1] > (0.5 + threshold)) | (predicted_probs[:, 0] > (0.5 + threshold))
+    
+    # Calculate the number of samples in the filtered dataset
+    filtered_samples = np.sum(mask)
+    
+    # Calculate the percentage reduction in samples
+    reduction_percentage = ((total_samples - filtered_samples) / total_samples) * 100
+    
+    # Append percentage reduction to the list
+    percentage_reduction.append(reduction_percentage)
+
+# Plot percentage reduction vs threshold
+plt.plot(threshold_range, percentage_reduction)
+plt.xlabel('Threshold')
+plt.ylabel('Percentage Reduction')
+plt.xlim(0, 0.4)
+plt.title('Percentage Reduction of Samples vs Threshold')
+plt.grid(True)
+plt.show()
 
 # %%
 # To quantify the uncertainty of the model i compute the entropy of the predicted probabilities
@@ -263,8 +250,8 @@ def entropy(predicted_probs):
         The average entropy value across all samples in the input data.
     """
 
-    epsilon = 1e-9
-    predicted_probs = np.clip(predicted_probs, epsilon, 1 - epsilon)
+    # epsilon = 1e-9
+    # predicted_probs = np.clip(predicted_probs, epsilon, 1 - epsilon)
 
     # Calculate entropy
     entropy_values = -np.sum(predicted_probs * np.log(predicted_probs), axis=1)

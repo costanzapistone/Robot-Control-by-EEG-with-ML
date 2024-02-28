@@ -253,17 +253,23 @@ print('Train[cl2] shape:', train[cl2].shape)
 print('Test[cl1] shape:', test[cl1].shape)
 print('Test[cl2] shape:', test[cl2].shape)
 #%%
-X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
-X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-y_train = np.zeros(X_train.shape[0], dtype=int) # 0 for left hand
-y_train[:ntrain_r] = 1
-y_test = np.zeros(X_test.shape[0], dtype=int)
-y_test[:ntest_r] = 1
+# X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+# X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
+# y_train = np.zeros(X_train.shape[0], dtype=int) # 0 for left hand
+# y_train[:ntrain_r] = 1
+# y_test = np.zeros(X_test.shape[0], dtype=int)
+# y_test[:ntest_r] = 1
 
-print('X_train shape:', X_train.shape)
-print('X_test shape:', X_test.shape)
-print('y_train shape:', y_train.shape)
-print('y_test shape:', y_test.shape)
+# print('X_train shape:', X_train.shape)
+# print('X_test shape:', X_test.shape)
+# print('y_train shape:', y_train.shape)
+# print('y_test shape:', y_test.shape)
+#%%
+X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
+y_train = np.concatenate((np.zeros(ntrain_l), np.ones(ntrain_r)))
+X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
+y_test = np.concatenate((np.zeros(ntest_l), np.ones(ntest_r)))
+
 #%%
 ##################################### Classification #################################
 
@@ -279,11 +285,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 # Import evaluation metrics from scikit-learn
-from numpy import mean
-from numpy import std
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import RepeatedStratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, confusion_matrix
 # Directory to save trained models
@@ -381,6 +383,36 @@ plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 # Show plot
 plt.show()
+
+#%%
+from sklearn.metrics import roc_curve, auc
+
+plt.figure(figsize=(10, 8))
+
+for clf_name, clf in classifiers.items():
+    # Predict probabilities for positive class
+    if hasattr(clf, "decision_function"):
+        y_score = clf.decision_function(X_test)
+    else:
+        y_score = clf.predict_proba(X_test)[:, 1]
+
+    # Compute ROC curve and AUC
+    fpr, tpr, _ = roc_curve(y_test, y_score)
+    roc_auc = auc(fpr, tpr)
+
+    # Plot ROC curve
+    plt.plot(fpr, tpr, label=f'{clf_name} (AUC = {roc_auc:.2f})')
+
+# Plot random guessing line
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Random Guessing')
+
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
+
 
 # %%
 ############################################# Reliability Diagrams ######################################
