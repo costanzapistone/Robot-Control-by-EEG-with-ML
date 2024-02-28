@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'c'
+SUBJECT = 'g'
 
 # load the mat data
 EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
@@ -182,7 +182,7 @@ def apply_mix(W, trials):
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.5
+train_percentage = 0.6
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
