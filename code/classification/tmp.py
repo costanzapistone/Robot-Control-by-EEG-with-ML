@@ -7,7 +7,7 @@ from processing_functions import butter_bandpass
 from processing_functions import logvar
 import matplotlib.pyplot as plt
 # Define constants
-SUBJECT = 'g'
+SUBJECT = 'c'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 
 # Load the models
@@ -76,7 +76,7 @@ def apply_mix(W, trials):
     return trials_csp
 
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.6
+train_percentage = 0.5
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -112,21 +112,6 @@ train[cl1] = logvar(train[cl1])
 train[cl2] = logvar(train[cl2])
 test[cl1] = logvar(test[cl1])
 test[cl2] = logvar(test[cl2])
-
-print('train[cl1].shape :',train[cl1].shape)
-print('train[cl2].shape :',train[cl2].shape)
-print('test[cl1].shape :',test[cl1].shape)
-print('test[cl2].shape :',test[cl2].shape)
-
-
-#%%
-# 0 for right hand, 1 for left hand
-# X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
-# X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-# y_train = np.zeros(X_train.shape[0], dtype=int) 
-# y_train[:ntrain_r] = 1 
-# y_test = np.zeros(X_test.shape[0], dtype=int)
-# y_test[:ntest_r] = 1
 
 #%%
 # 1 for right hand, 0 for left hand

@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'g'
+SUBJECT = 'c'
 
 # load the mat data
 EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
@@ -182,7 +182,7 @@ def apply_mix(W, trials):
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.6
+train_percentage = 0.5
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -252,18 +252,6 @@ print('Train[cl1] shape:', train[cl1].shape)
 print('Train[cl2] shape:', train[cl2].shape)
 print('Test[cl1] shape:', test[cl1].shape)
 print('Test[cl2] shape:', test[cl2].shape)
-#%%
-# X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
-# X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-# y_train = np.zeros(X_train.shape[0], dtype=int) # 0 for left hand
-# y_train[:ntrain_r] = 1
-# y_test = np.zeros(X_test.shape[0], dtype=int)
-# y_test[:ntest_r] = 1
-
-# print('X_train shape:', X_train.shape)
-# print('X_test shape:', X_test.shape)
-# print('y_train shape:', y_train.shape)
-# print('y_test shape:', y_test.shape)
 #%%
 X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
 y_train = np.concatenate((np.zeros(ntrain_l), np.ones(ntrain_r)))
