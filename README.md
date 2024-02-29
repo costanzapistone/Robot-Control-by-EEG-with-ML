@@ -6,6 +6,8 @@
 The dataset used in this project is sourced from Dataset I of BCI Competition IV, which is publicly available online. It consists of EEG signals recorded from 59 channels while healthy subjects performed motor imagery tasks involving movements of the right hand and left hand, or left hand and right foot.
 For more detailed information about the dataset, please refer to the official competition website: https://bbci.de/competition/iv/desc_1.html
 
+### Subjects
+
 The total number of subjects are 7:
 subject a - MI movements: 'foot', 'right' - real 
 subject b - MI movements: 'left', 'right' - real
@@ -14,6 +16,8 @@ subject d - MI movements: 'left', 'right' - artificial
 subject e - MI movements: 'left', 'right' - artificial
 subject f - MI movements: 'foot', 'right' - real
 subject g - MI movements: 'left', 'right' - real
+
+### Location
 
 You can find the dataset in the following directory within this repository: 
 
