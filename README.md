@@ -1,4 +1,4 @@
-# Robot-Control-by-EEG-with-ML
+# Neural Signal-Based Robot Control with Machine Learning: Uncertainty Analysis for Improved Decision-Making
 
 ## Overview
 
@@ -9,13 +9,13 @@ For more detailed information about the dataset, please refer to the official co
 ### Subjects
 
 The total number of subjects are 7:  
-subject a - MI movements: 'foot', 'right' - real  
-subject b - MI movements: 'left', 'right' - real  
-subject c - MI movements: 'left', 'right' - artificial  
-subject d - MI movements: 'left', 'right' - artificial  
-subject e - MI movements: 'left', 'right' - artificial  
-subject f - MI movements: 'foot', 'right' - real  
-subject g - MI movements: 'left', 'right' - real  
+subject a - 'foot', 'right' - real  
+subject b - 'left', 'right' - real  
+subject c - 'left', 'right' - artificial  
+subject d - 'left', 'right' - artificial  
+subject e - 'left', 'right' - artificial  
+subject f - 'foot', 'right' - real  
+subject g - 'left', 'right' - real  
 
 
 ### Location
@@ -27,6 +27,9 @@ You can find the dataset in the following directory within this repository:
 ---
 
 ## ML Algorithm
+
+
+
 Pre-processing data steps:
 - Segmentation
 - Fast Fourier Transform (FFT)
