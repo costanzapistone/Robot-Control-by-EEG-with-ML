@@ -3,8 +3,21 @@
 ## Overview
 
 ## Data
-The Dataset used is the public Dataset I from BCI Competition IV available online. EEG signals from 4 different subject performing the motor imagery task (right hand and left hand or left hand and right foot)have been recorded from 59 channels.
-More detailed description can be found here: https://bbci.de/competition/iv/desc_1.html
+The dataset used in this project is sourced from Dataset I of BCI Competition IV, which is publicly available online. It consists of EEG signals recorded from 59 channels while healthy subjects performed motor imagery tasks involving movements of the right hand and left hand, or left hand and right foot.
+For more detailed information about the dataset, please refer to the official competition website: https://bbci.de/competition/iv/desc_1.html
+
+The total number of subjects are 7:
+subject a - MI movements: 'foot', 'right' - real 
+subject b - MI movements: 'left', 'right' - real
+subject c - MI movements: 'left', 'right' - artificial 
+subject d - MI movements: 'left', 'right' - artificial
+subject e - MI movements: 'left', 'right' - artificial
+subject f - MI movements: 'foot', 'right' - real
+subject g - MI movements: 'left', 'right' - real
+
+You can find the dataset in the following directory within this repository: 
+
+/Robot-Control-by-EEG-with-ML/data/
 
 ---
 
