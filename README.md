@@ -8,14 +8,15 @@ For more detailed information about the dataset, please refer to the official co
 
 ### Subjects
 
-The total number of subjects are 7:
-subject a - MI movements: 'foot', 'right' - real 
-subject b - MI movements: 'left', 'right' - real
-subject c - MI movements: 'left', 'right' - artificial 
-subject d - MI movements: 'left', 'right' - artificial
-subject e - MI movements: 'left', 'right' - artificial
-subject f - MI movements: 'foot', 'right' - real
-subject g - MI movements: 'left', 'right' - real
+The total number of subjects are 7:  
+subject a - MI movements: 'foot', 'right' - real  
+subject b - MI movements: 'left', 'right' - real  
+subject c - MI movements: 'left', 'right' - artificial  
+subject d - MI movements: 'left', 'right' - artificial  
+subject e - MI movements: 'left', 'right' - artificial  
+subject f - MI movements: 'foot', 'right' - real  
+subject g - MI movements: 'left', 'right' - real  
+
 
 ### Location
 
