@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'g'
+SUBJECT = 'c'
 
 # load the mat data
 EEG_data = loadmat(f'/home/platonics/Documents/costanza_workspace/src/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
@@ -77,32 +77,23 @@ import matplotlib.pyplot as plt
 
 # Compute the features
 logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
-# std_trials = {cl1: std(trials[cl1]), cl2: std(trials[cl2])}
-# rms_trials = {cl1: rms(trials[cl1]), cl2: rms(trials[cl2])}
 
 # Bar Plots
 plt.figure(figsize=(15, 3))
 plot_logvar(logvar_trials, cl_lab, cl1, cl2, nchannels)
-plt.figure(figsize=(15, 3))
-# plot_std(std_trials, cl_lab, cl1, cl2, nchannels)
-# plt.figure(figsize=(15, 3))
-# plot_rms(rms_trials, cl_lab, cl1, cl2, nchannels)
 plt.show()
 
 # %%
 # Scatter Plot of the features
-from processing_functions import scatter_logvar, scatter_std, scatter_rms
-
+from processing_functions import scatter_logvar
 scatter_logvar(logvar_trials, cl_lab, [0, -1])
-# scatter_std(std_trials, cl_lab, [0, -1])
-# scatter_rms(rms_trials, cl_lab, [0, -1])
 
 #%%
 # Band-Pass Filtering
 from processing_functions import butter_bandpass
 
 trials_filt = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq, nsamples),
-                    cl2: butter_bandpass(trials[cl2], 8, 30, sfreq, nsamples)}
+               cl2: butter_bandpass(trials[cl2], 8, 30, sfreq, nsamples)}
 
 # %%
 # Common Spatial Patterns (CSP) butterworth 
@@ -159,7 +150,7 @@ def apply_mix(W, trials):
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.6
+train_percentage = 0.5
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -190,22 +181,12 @@ filename = os.path.join(save_dir_csp_mat, f"CSP_matrix_W.pkl")
 with open(filename, 'wb') as file:
     pickle.dump(W, file)
 
-print('Train[cl1] shape:', train[cl1].shape)
-print('Train[cl2] shape:', train[cl2].shape)
-print('Test[cl1] shape:', test[cl1].shape)
-print('Test[cl2] shape:', test[cl2].shape)
-
 #%%
 # Apply the CSP on both the training and test set
 train[cl1] = apply_mix(W, train[cl1])
 train[cl2] = apply_mix(W, train[cl2])
 test[cl1] = apply_mix(W, test[cl1])
 test[cl2] = apply_mix(W, test[cl2])
-
-print('Train[cl1] shape:', train[cl1].shape)
-print('Train[cl2] shape:', train[cl2].shape)
-print('Test[cl1] shape:', test[cl1].shape)
-print('Test[cl2] shape:', test[cl2].shape)
 
 #%%
 # Select only the first and last components for classification
@@ -215,38 +196,19 @@ train[cl2] = train[cl2][comp,:,:]
 test[cl1] = test[cl1][comp,:,:]
 test[cl2] = test[cl2][comp,:,:]
 
-print('Train[cl1] shape:', train[cl1].shape)
-print('Train[cl2] shape:', train[cl2].shape)
-print('Test[cl1] shape:', test[cl1].shape)
-print('Test[cl2] shape:', test[cl2].shape)
-
 #%%
 # Calculate the log-var
 train[cl1] = logvar(train[cl1])
 train[cl2] = logvar(train[cl2])
 test[cl1] = logvar(test[cl1])
 test[cl2] = logvar(test[cl2])
-print('Train[cl1] shape:', train[cl1].shape)
-print('Train[cl2] shape:', train[cl2].shape)
-print('Test[cl1] shape:', test[cl1].shape)
-print('Test[cl2] shape:', test[cl2].shape)
-#%%
-# X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
-# X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
-# y_train = np.zeros(X_train.shape[0], dtype=int) # 1 for left hand
-# y_train[:ntrain_r] = 1
-# y_test = np.zeros(X_test.shape[0], dtype=int)
-# y_test[:ntest_r] = 1
 
+#%%
 X_train = np.concatenate((train[cl1], train[cl2]), axis=1).T
 y_train = np.concatenate((np.zeros(ntrain_l), np.ones(ntrain_r))) # 1 for right hand, 0 for left hand
 X_test = np.concatenate((test[cl1], test[cl2]), axis=1).T
 y_test = np.concatenate((np.zeros(ntest_l), np.ones(ntest_r))) # 1 for right hand, 0 for left hand
 
-print('X_train shape:', X_train.shape)
-print('X_test shape:', X_test.shape)
-print('y_train shape:', y_train.shape)
-print('y_test shape:', y_test.shape)
 #%%
 ##################################### Classification #################################
 
@@ -262,11 +224,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 # Import evaluation metrics from scikit-learn
-from numpy import mean
-from numpy import std
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import RepeatedStratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, confusion_matrix
 # Directory to save trained models
@@ -320,7 +278,6 @@ for clf_name, clf in classifiers.items():
 print("Classifier\tAccuracy\tPrecision\tError\tSpecificity")
 for metric in evaluation_metrics:
     print(f"{metric['Classifier']}\t{metric['Accuracy']:.4f}\t{metric['Precision']:.4f}\t{metric['Error']:.4f}\t{metric['Specificity']:.4f}")
-
 
 # %%
 ############################################# Reliability Diagrams ######################################
@@ -425,7 +382,6 @@ plt.show()
 
 
 #%%
-
 # Classifiers Calibration
 from sklearn.calibration import CalibratedClassifierCV
 
@@ -497,9 +453,7 @@ for j in range(num_classifiers, num_rows * num_cols):
 plt.tight_layout()
 plt.show()
 
-# %%
 #%%
-
 # Classifiers Calibration
 from sklearn.calibration import CalibratedClassifierCV
 
@@ -570,5 +524,3 @@ for j in range(num_classifiers, num_rows * num_cols):
 
 plt.tight_layout()
 plt.show()
-
-# %%
