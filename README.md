@@ -28,14 +28,12 @@ You can find the dataset in the following directory within this repository:
 ---
 
 ## ML Algorithm
-
-
-
 Pre-processing data steps:
 - Segmentation
 - Fast Fourier Transform (FFT)
 - Linear Discriminant Analysis (LDA) for dimesnionality reduction
 
+## Classification
 Classificiers used:
 - Support Vector Machine
 - K-Nearest Neighbors (K-NN)
