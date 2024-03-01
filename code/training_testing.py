@@ -5,18 +5,16 @@ from processing_functions import psd, plot_PSD
 import pickle
 import os
 
-SUBJECT = 'c'
+SUBJECT = 'g'
+MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
+MODEL_PATH = f"/home/costanza/Robot-Control-by-EEG-with-ML/models/{SUBJECT}"
 
+#%%
 # load the mat data
-EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat', struct_as_record = True)
+EEG_data = loadmat(MATFILE, struct_as_record = True)
 
 # List all the keys in the loaded data
 keys = EEG_data.keys()
-# c,d,e: 'left' 'right'
-# a,f: 'foot', 'right'
-
-# a,b,f,g: real data
-# c,d,e: simulated data
 
 # Print the keys variables to identify the correct key for EEG data
 print(keys)
@@ -202,13 +200,11 @@ W = csp(train[cl1], train[cl2])
 print('W shape:', W.shape)
 
 # Save the CSP transformation matrix
-# Directory to save it
-save_dir_csp_mat = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models"
 
 # Create the directory if it doesn't exist
-os.makedirs(save_dir_csp_mat, exist_ok=True)
+os.makedirs(MODEL_PATH, exist_ok=True)
 
-filename = os.path.join(save_dir_csp_mat, f"CSP_matrix_W.pkl")
+filename = os.path.join(MODEL_PATH, f"CSP_matrix_W.pkl")
 with open(filename, 'wb') as file:
     pickle.dump(W, file)
 
@@ -277,10 +273,10 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, confusion_matrix
 # Directory to save trained models
-save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models"
+# save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models"
 
 # Create the directory if it doesn't exist
-os.makedirs(save_dir, exist_ok=True)
+os.makedirs(MODEL_PATH, exist_ok=True)
 
 # Create a dictionary to store the classifiers
 classifiers = {'LDA': LinearDiscriminantAnalysis(),
@@ -299,7 +295,7 @@ for clf_name, clf in classifiers.items():
     clf.fit(X_train, y_train)
     
     # Save the trained classifier to a .pkl file
-    clf_filename = os.path.join(save_dir, f"{clf_name}_model.pkl")
+    clf_filename = os.path.join(MODEL_PATH, f"{clf_name}_model.pkl")
     with open(clf_filename, 'wb') as f:
         pickle.dump(clf, f)
 
