@@ -1,7 +1,7 @@
 # Neural Signal-Based Robot Control with Machine Learning: Uncertainty Analysis for Improved Decision-Making
 
 ## Overview
-This repository contains code for a Master's thesis project on "Robot Control by EEG with Machine Learning: Uncertainty Analysis for Improved Decision-Making." The project explores the use of neural signals obtained through EEG (Electroencephalography) signals for controlling robots, employing machine learning techniques for classification, and analyzing uncertainty to enhance decision-making processes in the field of HRI.
+This repository contains code for a Master's thesis project. The project explores the use of neural signals obtained through EEG signals for controlling robots, employing machine learning techniques for classification, and analyzing uncertainty to enhance decision-making processes in the field of HRI.
 
 ## Data
 The dataset used in this project is sourced from Dataset I of BCI Competition IV, which is publicly available online. It consists of EEG signals recorded from 59 channels while healthy subjects performed motor imagery tasks involving movements of the right hand and left hand, or left hand and right foot.
