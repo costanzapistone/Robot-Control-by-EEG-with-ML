@@ -7,12 +7,12 @@ from processing_functions import butter_bandpass, apply_mix, logvar
 import matplotlib.pyplot as plt
 
 # Define constants
-SUBJECT = 'g'
+SUBJECT = 'c'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
-MODEL = 'LDA'
-CLASSIFIER_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/model/{SUBJECT}/{MODEL}_model.pkl'
-W_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/model/{SUBJECT}/CSP_matrix_W.pkl'
-TRAIN_PERCENTAGE = 0.6
+MODEL = 'LR'
+CLASSIFIER_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/models/{SUBJECT}/{MODEL}_model.pkl'
+W_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/models/{SUBJECT}/CSP_matrix_W.pkl'
+TRAIN_PERCENTAGE = 0.5
 
 with open(CLASSIFIER_FILENAME, 'rb') as file:
     model = pickle.load(file)
@@ -133,9 +133,6 @@ print(X_test_f.shape)
 print(y_test_f.shape)
 
 #%%
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, confusion_matrix
-
 # Define a range of thresholds
 threshold_range = np.linspace(0, 0.4, 50)
 
@@ -207,6 +204,72 @@ plt.ylabel('Percentage Reduction')
 plt.xlim(0, 0.4)
 plt.title('Percentage Reduction of Samples vs Threshold')
 plt.grid(True)
+plt.show()
+
+#%%
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Define a range of thresholds
+threshold_range = np.linspace(0, 0.4, 50)
+
+# Initialize lists to store accuracy scores and percentage reduction
+accuracy_scores = []
+percentage_reduction = []
+
+# Total number of samples in the original dataset
+total_samples = len(y_test)
+
+# Iterate over each threshold
+for threshold in threshold_range:
+    # Create mask
+    mask = (predicted_probs[:, 1] > (0.5 + threshold)) | (predicted_probs[:, 0] > (0.5 + threshold))
+    
+    # Apply mask to test set
+    X_test_filtered = X_test[mask]
+    y_test_filtered = y_test[mask]
+    
+    y_pred = model.predict(X_test_filtered)
+    conf_matrix = confusion_matrix(y_test_filtered, y_pred)
+    accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
+
+    # Append accuracy score to list
+    accuracy_scores.append(accuracy)
+    
+    # Calculate the number of samples in the filtered dataset
+    filtered_samples = np.sum(mask)
+    
+    # Calculate the percentage reduction in samples
+    reduction_percentage = ((total_samples - filtered_samples) / total_samples) * 100
+    
+    # Append percentage reduction to the list
+    percentage_reduction.append(reduction_percentage)
+
+# Create a figure and a set of subplots
+fig, ax1 = plt.subplots()
+
+# Plot accuracy vs threshold
+color = 'tab:blue'
+ax1.set_xlabel('Threshold')
+ax1.set_ylabel('Accuracy', color=color)
+ax1.plot(threshold_range, accuracy_scores, color=color)
+ax1.tick_params(axis='y', labelcolor=color)
+
+# Instantiate a second axes that shares the same x-axis
+ax2 = ax1.twinx()
+
+# We already handled the x-label with ax1
+color = 'tab:red'
+ax2.set_ylabel('Missed Actions %', color=color)
+ax2.plot(threshold_range, percentage_reduction, color=color)
+ax2.tick_params(axis='y', labelcolor=color)
+
+# Otherwise if you want to give a title to the graph
+plt.title('Accuracy and Missed Actions vs Threshold')
+plt.grid()
+plt.xlim(0, 0.4)
+
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
 
 # %%
