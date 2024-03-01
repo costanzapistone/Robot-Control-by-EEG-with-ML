@@ -361,3 +361,65 @@ def scatter_std(std_trials, cl_lab, chan_ind):
     plt.title('Scatter plot of the standard deviation features')
     plt.legend()
     plt.show()
+
+def cov(trials, nsamples):
+    """
+    Calculates the covariance for each trial and return their average.
+
+    Parameters
+    ----------
+    trials : 3d-array (channels x samples x trials)
+        The EEG data for all the trials.
+
+    Returns
+    -------
+    cov_matrix : 2d-array
+        The covariance matrix
+    """
+    ntrials = trials.shape[2]
+    covs = [ trials[:,:,i].dot(trials[:,:,i].T)/ nsamples for i in range(ntrials) ]
+    
+    return np.mean(covs, axis=0)
+
+def whitening(sigma):
+    """ calculate whitening matrix for covariance matrix sigma. """
+
+    U, l, _ = linalg.svd(sigma)
+
+    return U.dot(np.diag(l ** -0.5))
+
+def csp(trials_r, trials_l, nsamples):
+    """
+    Calculates the CSP transformation matrix W.
+
+    Parameters
+    ----------
+    trials_r, trials_l : 3d-arrays (channels x samples x trials)
+        The EEGsignal for right and left hand
+
+    Returns
+    -------
+    W : 2d-array
+        The CSP transformation matrix
+    """
+    # CSP requires the estimation of the covariance matrix for each class
+    cov_r = cov(trials_r, nsamples)
+    cov_l = cov(trials_l, nsamples)
+
+    P = whitening(cov_r + cov_l)
+    B, _, _ = linalg.svd(P.T.dot(cov_l).dot(P))
+    
+    W = P.dot(B)
+
+    return W
+
+def apply_mix(W, trials, nchannels, nsamples):
+    """
+    Apply a mixing matrix to each trial (basically multiply W with the EEG signal matrix)
+    """
+    ntrials = trials.shape[2]
+    trials_csp = np.zeros((nchannels, nsamples, ntrials))
+    for i in range(ntrials):
+        trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
+
+    return trials_csp
