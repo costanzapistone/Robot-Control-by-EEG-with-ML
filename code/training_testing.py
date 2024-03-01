@@ -8,7 +8,7 @@ import os
 SUBJECT = 'g'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 MODEL_PATH = f"/home/costanza/Robot-Control-by-EEG-with-ML/models/{SUBJECT}"
-
+TRAIN_PERCENTAGE = 0.6
 #%%
 # load the mat data
 EEG_data = loadmat(MATFILE, struct_as_record = True)
@@ -80,7 +80,7 @@ trials_filt = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq, nsamples),
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.6
+train_percentage = TRAIN_PERCENTAGE
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -474,8 +474,6 @@ plt.tight_layout()
 plt.show()
 
 # %%
-#%%
-
 # Classifiers Calibration
 from sklearn.calibration import CalibratedClassifierCV
 
