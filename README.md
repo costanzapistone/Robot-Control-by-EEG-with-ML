@@ -43,11 +43,12 @@ You can find the implementation and the functions used respectively in the follo
 
 ## Classification
 Classificiers used:
-- Support Vector Machine
-- K-Nearest Neighbors (K-NN)
+- Support Vector Machine (SVM)
+- Linear Discriminant Analysis (LDA)
 - Logistic Regression (LR)
 - Decision Tree (DT)
 - Naive Bayes (NB)
+- Random Forest (RF)
 
 The choice of the best classifier for robot control purposes has been done using a combined score. The score is derived by a simple arithmetic sum of AUC (Area Under the Curve) and ACC (Accuracy), with each metric contribuiting equally to the final result. 
 
