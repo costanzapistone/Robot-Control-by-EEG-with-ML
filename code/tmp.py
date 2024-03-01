@@ -7,12 +7,12 @@ from processing_functions import butter_bandpass, apply_mix, logvar
 import matplotlib.pyplot as plt
 
 # Define constants
-SUBJECT = 'c'
+SUBJECT = 'g'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
 MODEL = 'LR'
 CLASSIFIER_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/models/{SUBJECT}/{MODEL}_model.pkl'
 W_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/models/{SUBJECT}/CSP_matrix_W.pkl'
-TRAIN_PERCENTAGE = 0.5
+TRAIN_PERCENTAGE = 0.6
 
 with open(CLASSIFIER_FILENAME, 'rb') as file:
     model = pickle.load(file)
@@ -254,6 +254,9 @@ ax1.set_xlabel('Threshold')
 ax1.set_ylabel('Accuracy', color=color)
 ax1.plot(threshold_range, accuracy_scores, color=color)
 ax1.tick_params(axis='y', labelcolor=color)
+
+# Plot a vertical line at the threshol equal to 0.1
+ax1.axvline(x=0.2, color='r', linestyle='--', label='Threshold = 0.1')
 
 # Instantiate a second axes that shares the same x-axis
 ax2 = ax1.twinx()
