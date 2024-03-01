@@ -3,23 +3,24 @@ import numpy as np
 import pickle
 from sklearn.metrics import confusion_matrix
 from scipy.io import loadmat
-from processing_functions import butter_bandpass
-from processing_functions import logvar
+from processing_functions import butter_bandpass, apply_mix, logvar
 import matplotlib.pyplot as plt
+
 # Define constants
-SUBJECT = 'c'
+SUBJECT = 'g'
 MATFILE = f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{SUBJECT}.mat'
+MODEL = 'LDA'
+CLASSIFIER_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/model/{SUBJECT}/{MODEL}_model.pkl'
+W_FILENAME = f'/home/costanza/Robot-Control-by-EEG-with-ML/model/{SUBJECT}/CSP_matrix_W.pkl'
+TRAIN_PERCENTAGE = 0.6
 
-# Load the models
-model = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/LR_model.pkl'
-W = f'/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models/CSP_matrix_W.pkl'
-
-with open(model, 'rb') as file:
+with open(CLASSIFIER_FILENAME, 'rb') as file:
     model = pickle.load(file)
 
-with open(W, 'rb') as file:
+with open(W_FILENAME, 'rb') as file:
     W = pickle.load(file)
 
+#%%
 # load the mat data
 EEG_data = loadmat(MATFILE, struct_as_record = True)
 keys = EEG_data.keys()
@@ -64,19 +65,8 @@ for cl, code in zip(cl_lab, np.unique(event_codes)):
 trials_filt = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq, nsamples),
                cl2: butter_bandpass(trials[cl2], 8, 30, sfreq, nsamples)}
 
-
-def apply_mix(W, trials):
-    """
-    Apply a mixing matrix to each trial (basically multiply W with the EEG signal matrix)
-    """
-    ntrials = trials.shape[2]
-    trials_csp = np.zeros((nchannels, nsamples, ntrials))
-    for i in range(ntrials):
-        trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
-    return trials_csp
-
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.5
+train_percentage = TRAIN_PERCENTAGE
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -92,10 +82,10 @@ test = {cl1: trials_filt[cl1][:,:,ntrain_l:],
         cl2: trials_filt[cl2][:,:,ntrain_r:]}
 
 # Apply the CSP on both the training and test set
-train[cl1] = apply_mix(W, train[cl1])
-train[cl2] = apply_mix(W, train[cl2])
-test[cl1] = apply_mix(W, test[cl1])
-test[cl2] = apply_mix(W, test[cl2])
+train[cl1] = apply_mix(W, train[cl1], nchannels, nsamples)
+train[cl2] = apply_mix(W, train[cl2], nchannels, nsamples)
+test[cl1] = apply_mix(W, test[cl1], nchannels, nsamples)
+test[cl2] = apply_mix(W, test[cl2], nchannels, nsamples)
 
 
 #%%
