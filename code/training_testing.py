@@ -1,7 +1,7 @@
 #%%
 import numpy as np
 from scipy.io import loadmat
-from processing_functions import psd, plot_PSD
+from processing_functions import butter_bandpass, logvar, cov, whitening, csp, apply_mix
 import pickle
 import os
 
@@ -49,16 +49,6 @@ ypos = EEG_data['nfo']['ypos']
 nclasses = len(cl_lab)
 nevents = len(event_onsets)
 
-# Print some information
-print('Shape of EEG:', EEGdata.shape)
-print('Sample rate:', sfreq)
-print('Number of channels:', nchannels)
-print('Channel names:', chan_names)
-print('Number of events (MI movements):', event_onsets.shape[1])
-print('Event codes:', np.unique(event_codes))
-print('Class labels:', cl_lab)
-print('Number of classes:', nclasses)
-
 # %%
 # Dictionary to store the trials
 trials = {}
@@ -81,106 +71,16 @@ for cl, code in zip(cl_lab, np.unique(event_codes)):
     # Extract each trial
     for i, onset in enumerate(cl_onsets):
         trials[cl][:,:,i] = EEGdata[:, win + onset]
-
-# Some information about the dimensionality of the data (channels x time x trials)
-print('Shape of trials[cl1]:', trials[cl1].shape)
-print('Shape of trials[cl2]:', trials[cl2].shape)
-
-#%%
-# Compute the PSD
-psd_cl1, freqs = psd(trials[cl1], sfreq)
-psd_cl2, freqs = psd(trials[cl2], sfreq)
-psd_all = {cl1: psd_cl1, cl2: psd_cl2}
-
-# Plot
-plot_PSD(psd_all, freqs, chan_names, cl_lab)
     
-# %%
-# Statistical analysis
-from processing_functions import logvar, plot_logvar
-import matplotlib.pyplot as plt
-
-# Logvar (Log-Variance): Logvar represents the logarithm of the variance of a signal. Variance is a measure of the spread or dispersion of a set of values. By taking the logarithm of the variance, the scale of the values is adjusted, making them more suitable for visualization and analysis.
-# For each channel and class compute the logvar
-
-# Compute the features
-logvar_trials = {cl1: logvar(trials[cl1]),cl2: logvar(trials[cl2])}
-
-# Bar Plots
-plt.figure(figsize=(15, 3))
-plot_logvar(logvar_trials, cl_lab, cl1, cl2, nchannels)
-plt.show()
-
-# %%
-# Scatter Plot of the features
-from processing_functions import scatter_logvar
-scatter_logvar(logvar_trials, cl_lab, [0, -1])
-
 #%%
 # Band-Pass Filtering
-from processing_functions import butter_bandpass
 
-lowcut = 8
-highcut = 30
-
-trials_filt = {cl1: butter_bandpass(trials[cl1], lowcut, highcut, sfreq, nsamples),
-               cl2: butter_bandpass(trials[cl2], lowcut, highcut, sfreq, nsamples)}
-
-# %%
-
-from numpy import linalg
-
-def cov(trials):
-    """
-    Calculates the covariance for each trial and return their average.
-
-    """
-    ntrials = trials.shape[2]
-    covs = [ trials[:,:,i].dot(trials[:,:,i].T)/ nsamples for i in range(ntrials) ]
-    return np.mean(covs, axis=0)
-
-def whitening(sigma):
-    """ calculate whitening matrix for covariance matrix sigma. """
-    U, l, _ = linalg.svd(sigma)
-    return U.dot(np.diag(l ** -0.5))
-
-def csp(trials_r, trials_l):
-    """
-    Calculates the CSP transformation matrix W.
-
-    Parameters
-    ----------
-    trials_r, trials_l : 3d-arrays (channels x samples x trials)
-        The EEGsignal for right and left hand
-
-    Returns
-    -------
-    W : mixing matrix (spatial filters that will maximize the variance for one class and minimize the variance for the other)
-        The CSP transformation matrix
-    """
-    cov_r = cov(trials_r)
-    cov_l = cov(trials_l)
-
-    P = whitening(cov_r + cov_l)
-    B, _, _ = linalg.svd(P.T.dot(cov_l).dot(P))
-    
-    W = P.dot(B)
-    return W
-
-def apply_mix(W, trials):
-    """
-    Apply a mixing matrix to each trial (basically multiply W with the EEG signal matrix)
-    """
-    ntrials = trials.shape[2]
-    trials_csp = np.zeros((nchannels, nsamples, ntrials))
-    for i in range(ntrials):
-        trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
-    return trials_csp
-
+trials_filt = {cl1: butter_bandpass(trials[cl1], 8, 30, sfreq, nsamples),
+               cl2: butter_bandpass(trials[cl2], 8, 30, sfreq, nsamples)}
 
 # %%
 # Common Spatial Patterns (CSP) 
-train_percentage = 0.5
+train_percentage = 0.6
 
 # Calculate the number of trials for each class the above percentage boils down to
 ntrain_l = int(trials_filt[cl1].shape[2] * train_percentage)
@@ -196,7 +96,7 @@ test = {cl1: trials_filt[cl1][:,:,ntrain_l:],
         cl2: trials_filt[cl2][:,:,ntrain_r:]}
 
 # Train the CSP on the training set only
-W = csp(train[cl1], train[cl2])
+W = csp(train[cl1], train[cl2], nsamples)
 print('W shape:', W.shape)
 
 # Save the CSP transformation matrix
@@ -215,10 +115,10 @@ print('Test[cl2] shape:', test[cl2].shape)
 
 #%%
 # Apply the CSP on both the training and test set
-train[cl1] = apply_mix(W, train[cl1])
-train[cl2] = apply_mix(W, train[cl2])
-test[cl1] = apply_mix(W, test[cl1])
-test[cl2] = apply_mix(W, test[cl2])
+train[cl1] = apply_mix(W, train[cl1], nchannels, nsamples)
+train[cl2] = apply_mix(W, train[cl2], nchannels, nsamples)
+test[cl1] = apply_mix(W, test[cl1], nchannels, nsamples)
+test[cl2] = apply_mix(W, test[cl2], nchannels, nsamples)
 
 print('Train[cl1] shape:', train[cl1].shape)
 print('Train[cl2] shape:', train[cl2].shape)
@@ -272,8 +172,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, confusion_matrix
-# Directory to save trained models
-# save_dir = f"/home/costanza/Robot-Control-by-EEG-with-ML/code/classification/Subject_{SUBJECT}/2_Components/Trained_Models"
 
 # Create the directory if it doesn't exist
 os.makedirs(MODEL_PATH, exist_ok=True)

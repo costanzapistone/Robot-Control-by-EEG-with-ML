@@ -3,7 +3,6 @@ import numpy as np
 from scipy.io import loadmat
 from processing_functions import psd, plot_PSD, logvar, plot_logvar, scatter_logvar, butter_bandpass, cov, whitening, csp, apply_mix
 import matplotlib.pyplot as plt
-from numpy import linalg
 
 # Define the subject to analyze
 subject = 'd'
@@ -128,57 +127,6 @@ plt.show()
 
 # Scatter Plot of the features
 scatter_logvar(logvar_trials_filt, cl_lab, [0, -1])
-# %%
-# Common Spatial Patterns (CSP)
-
-from numpy import linalg
-
-def cov(trials):
-    """
-    Calculates the covariance for each trial and return their average.
-
-    """
-    ntrials = trials.shape[2]
-    covs = [ trials[:,:,i].dot(trials[:,:,i].T)/ nsamples for i in range(ntrials) ]
-    return np.mean(covs, axis=0)
-
-def whitening(sigma):
-    """ calculate whitening matrix for covariance matrix sigma. """
-    U, l, _ = linalg.svd(sigma)
-    return U.dot(np.diag(l ** -0.5))
-
-def csp(trials_r, trials_l):
-    """
-    Calculates the CSP transformation matrix W.
-
-    Parameters
-    ----------
-    trials_r, trials_l : 3d-arrays (channels x samples x trials)
-        The EEGsignal for right and left hand
-
-    Returns
-    -------
-    W : mixing matrix (spatial filters that will maximize the variance for one class and minimize the variance for the other)
-        The CSP transformation matrix
-    """
-    cov_r = cov(trials_r)
-    cov_l = cov(trials_l)
-
-    P = whitening(cov_r + cov_l)
-    B, _, _ = linalg.svd(P.T.dot(cov_l).dot(P))
-    
-    W = P.dot(B)
-    return W
-
-def apply_mix(W, trials):
-    """
-    Apply a mixing matrix to each trial (basically multiply W with the EEG signal matrix)
-    """
-    ntrials = trials.shape[2]
-    trials_csp = np.zeros((nchannels, nsamples, ntrials))
-    for i in range(ntrials):
-        trials_csp[:,:,i] = W.T.dot(trials[:,:,i])
-    return trials_csp
 
 #%% 
 # CSP
