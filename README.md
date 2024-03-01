@@ -28,10 +28,18 @@ You can find the dataset in the following directory within this repository:
 ---
 
 ## ML Algorithm
-Pre-processing data steps:
-- Segmentation
-- Fast Fourier Transform (FFT)
-- Linear Discriminant Analysis (LDA) for dimesnionality reduction
+The preprocessing follows these steps:
+Segmentation: The EEG data is segmented into trials based on event markers, dividing them into distinct epochs for analysis.
+Filtering: A band-pass filter is applied to the EEG trials to isolate frequency components relevant to the task at hand, enhancing the signal-to-noise ratio.
+Common Spatial Patterns (CSP): The CSP algorithm is utilized to extract spatial filters that maximize the variance for one class of trials while minimizing it for another. This step enhances the discriminative power of the EEG signals.
+
+### Location
+
+You can find the implementation and the functions used respectively in the following directories within this repository: 
+
+/Robot-Control-by-EEG-with-ML/code/data_processing.py
+/Robot-Control-by-EEG-with-ML/code/processing_functions.py
+
 
 ## Classification
 Classificiers used:
