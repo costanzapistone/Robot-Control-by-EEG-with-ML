@@ -122,7 +122,7 @@ accuracy = np.trace(conf_matrix) / np.sum(conf_matrix)
 # I have to define a threshold to decide which samples to keep and which to discard
 predicted_probs = model.predict_proba(X_test)
 # Define thresholds
-threshold = 0.1
+threshold = 0.2
 mask = (predicted_probs[:, 1] > ( 0.5 + threshold)) | (predicted_probs[:, 0] > (0.5 + threshold))
 
 # Apply the mask to the test set
@@ -131,6 +131,12 @@ y_test_f = y_test[mask]
 
 print(X_test_f.shape)
 print(y_test_f.shape)
+
+#%%
+# random_index_r = np.random.choice(test[cl2].shape[1])
+# sample_r = test[cl2][:, random_index_r]
+
+# if (predicted_probs[:, 1] > ( 0.5 + threshold)) | (predicted_probs[:, 0] > (0.5 + threshold))
 
 #%%
 # Define a range of thresholds
