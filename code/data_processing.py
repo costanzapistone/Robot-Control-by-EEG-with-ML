@@ -5,7 +5,7 @@ from processing_functions import psd, plot_PSD, logvar, plot_logvar, scatter_log
 import matplotlib.pyplot as plt
 
 # Define the subject to analyze
-subject = 'd'
+subject = 'c'
 
 # load the mat data
 EEG_data = loadmat(f'/home/costanza/Robot-Control-by-EEG-with-ML/data/BCICIV_calib_ds1{subject}.mat', struct_as_record = True)

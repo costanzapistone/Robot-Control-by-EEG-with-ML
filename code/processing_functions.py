@@ -71,7 +71,7 @@ def plot_PSD(psd_all, freqs, chan_names, cl):
         plt.ylabel('Power Spectral Density (dB)')
         plt.title('PSD for channel {}'.format(chan_names[ch_ind]))
         plt.xlim(0,40)
-        plt.ylim(0, 300)
+        plt.ylim(0, 500)
         plt.legend()
         plt.grid(True)
 
@@ -114,23 +114,6 @@ def butter_bandpass(trials, lowcut, highcut, fs, nsamples, order=5):
 
     return trials_filt
 
-
-def rms(trials):
-    """
-    Calculates the Root Mean Square (RMS) of each channel.
-
-    Parameters
-    ----------
-    trials : 3d-array (channels x samples x trials)
-        The EEG signal
-
-    Returns
-    -------
-    rms_values : 2d-array (channels x trials)
-        The RMS values for each channel 
-    """
-    return np.sqrt(np.mean(trials**2, axis=1))
-
 def logvar(trials):
     """
     Calculates the log-variance of each channel.
@@ -146,22 +129,6 @@ def logvar(trials):
         The log-variance features for each channel 
     """
     return np.log(np.var(trials, axis=1))
-
-def std(trials):
-    """
-    Calculates the standard deviation of each channel.
-
-    Parameters
-    ----------
-    trials : 3d-array (channels x samples x trials)
-        The EEG signal
-
-    Returns
-    -------
-    feat : 2d-array (channels x trials)
-        The standard deviation features for each channel 
-    """
-    return np.std(trials, axis=1)
 
 def plot_logvar(trials, cl_lab, cl1, cl2, nchannels):
     """
@@ -192,68 +159,9 @@ def plot_logvar(trials, cl_lab, cl1, cl2, nchannels):
     plt.ylabel('Log-variance')
     plt.legend(cl_lab)
 
-def plot_rms(trials, cl_lab, cl1, cl2, nchannels):
-
-    """
-    Plots the RMS features for each channel as a bar chart.
-
-    Parameters
-    ----------
-    trials : 2-d array (channels x trials)
-        The RMS values for each channel
-
-    """
-    plt.figure(figsize=(12, 5))
-
-    x0 = np.arange(nchannels)
-    x1 = np.arange(nchannels) + 0.4
-
-    y0 = np.mean(trials[cl1], axis=1)
-    y1 = np.mean(trials[cl2], axis=1)
-
-    plt.bar(x0, y0, width=0.5, color='b')
-    plt.bar(x1, y1, width=0.4, color='orange')
-
-    plt.xlim(-0.5, nchannels+0.5)
-
-    plt.gca().yaxis.grid(True)
-    plt.title('RMS features for each channel')
-    plt.xlabel('Channels')
-    plt.ylabel('RMS')
-    plt.legend(cl_lab) 
-
-def plot_std(trials, cl_lab, cl1, cl2, nchannels):
-    """
-    Plots the standard deviation features for each channel as a bar chart.
-
-    Parameters
-    ----------
-    trials : 2-d array (channels x trials)
-        The standard deviation values for each channel
-
-    """
-    plt.figure(figsize=(12, 5))
-
-    x0 = np.arange(nchannels)
-    x1 = np.arange(nchannels) + 0.4
-
-    y0 = np.mean(trials[cl1], axis=1)
-    y1 = np.mean(trials[cl2], axis=1)
-
-    plt.bar(x0, y0, width=0.5, color='b')
-    plt.bar(x1, y1, width=0.4, color='orange')
-
-    plt.xlim(-0.5, nchannels+0.5)
-
-    plt.gca().yaxis.grid(True)
-    plt.title('Standard deviation features for each channel')
-    plt.xlabel('Channels')
-    plt.ylabel('Standard deviation')
-    plt.legend(cl_lab)
-
 def scatter_logvar(logvar_trials, cl_lab, chan_ind):
     """
-    Scatter plot of the log-variance features for 2 channels (C3 and C4).
+    Scatter plot of the log-variance features for 2 channels..
     Each data point on the plot represents the log-variance values of C3 and C4 for a single trial.
     X-Axis: The x-axis represents the log-variance of C3 for each trial. So, the horizontal position of a data point indicates the log-variance value of C3 for that trial.
 
@@ -272,7 +180,7 @@ def scatter_logvar(logvar_trials, cl_lab, chan_ind):
 
     Returns
     -------
-    Scatter plot of the log-variance features for 2 channels (C3 and C4).
+    Scatter plot of the log-variance features for 2 channels.
     """
     # channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
     channels_ind = chan_ind
@@ -284,81 +192,7 @@ def scatter_logvar(logvar_trials, cl_lab, chan_ind):
     plt.scatter(logvar_trials[cl2][channels_ind[0],:], logvar_trials[cl2][channels_ind[1],:], label=cl2)
     plt.xlabel('First Component')
     plt.ylabel('Last Component')
-    plt.title('Scatter plot of the log-variance features')
-    plt.legend()
-    plt.show()
-
-def scatter_rms(rms_trials, cl_lab, chan_ind):
-    """
-    Scatter plot of the RMS features for 2 channels (C3 and C4).
-    Each data point on the plot represents the RMS values of C3 and C4 for a single trial.
-    X-Axis: The x-axis represents the RMS of C3 for each trial. So, the horizontal position of a data point indicates the RMS value of C3 for that trial.
-
-    Y-Axis: The y-axis represents the RMS of C4 for each trial. So, the vertical position of a data point indicates the RMS value of C4 for that trial.
-
-    If I choose to include more than two channels in the scatter plot, each additional channel will be represented by an additional dimension on the plot.
-
-    Parameters
-    ----------
-    rms_trials : dict
-        The RMS features for each class
-    cl_lab : list of str
-        The class labels
-    chan_names : list of str
-        The channel names
-
-    Returns
-    -------
-    Scatter plot of the RMS features for 2 channels (C3 and C4).
-    """
-    # channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
-    channels_ind = chan_ind
-    cl1 = cl_lab[0]
-    cl2 = cl_lab[1]
-
-    plt.figure(figsize=(6,4))
-    plt.scatter(rms_trials[cl1][channels_ind[0],:], rms_trials[cl1][channels_ind[1],:], label=cl1)
-    plt.scatter(rms_trials[cl2][channels_ind[0],:], rms_trials[cl2][channels_ind[1],:], label=cl2)
-    plt.xlabel('First Component')
-    plt.ylabel('Last Component')
-    plt.title('Scatter plot of the RMS features')
-    plt.legend()
-    plt.show()
-
-def scatter_std(std_trials, cl_lab, chan_ind):
-    """
-    Scatter plot of the standard deviation features for 2 channels (C3 and C4).
-    Each data point on the plot represents the standard deviation values of C3 and C4 for a single trial.
-    X-Axis: The x-axis represents the standard deviation of C3 for each trial. So, the horizontal position of a data point indicates the standard deviation value of C3 for that trial.
-
-    Y-Axis: The y-axis represents the standard deviation of C4 for each trial. So, the vertical position of a data point indicates the standard deviation value of C4 for that trial.
-
-    If I choose to include more than two channels in the scatter plot, each additional channel will be represented by an additional dimension on the plot.
-
-    Parameters
-    ----------
-    std_trials : dict
-        The standard deviation features for each class
-    cl_lab : list of str
-        The class labels
-    chan_names : list of str
-        The channel names
-
-    Returns
-    -------
-    Scatter plot of the standard deviation features for 2 channels (C3 and C4).
-    """
-    # channels_ind = [chan_names.index('C3'), chan_names.index('C4')]  # C3 and C4 channels
-    channels_ind = chan_ind
-    cl1 = cl_lab[0]
-    cl2 = cl_lab[1]
-
-    plt.figure(figsize=(6,4))
-    plt.scatter(std_trials[cl1][channels_ind[0],:], std_trials[cl1][channels_ind[1],:], label=cl1)
-    plt.scatter(std_trials[cl2][channels_ind[0],:], std_trials[cl2][channels_ind[1],:], label=cl2)
-    plt.xlabel('First Component')
-    plt.ylabel('Last Component')
-    plt.title('Scatter plot of the standard deviation features')
+    plt.title('Scatter Plot of the log-variance features')
     plt.legend()
     plt.show()
 
